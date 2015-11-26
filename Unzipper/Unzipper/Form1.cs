@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
 using Ionic.Zip;
+using System.Configuration;
+using System.Diagnostics;
 
 namespace Unzipper
 {
@@ -17,33 +19,34 @@ namespace Unzipper
         public Form1()
         {
             InitializeComponent();
-        }
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-            button1.Enabled = false;
-            textBox1.Enabled = false;
-
-            string fullFileName = textBox1.Text;
-            if (!File.Exists(fullFileName))
-                MessageBox.Show("ERROR: The requested file " + fullFileName + " does not exist.");
+            //Load paths from config.
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            if (config.AppSettings.Settings["TempPath"] != null)
+            {
+                //If this exists they should all exist.
+                tempPathBox.Text = config.AppSettings.Settings["TempPath"].Value;
+                patchOutBox.Text = config.AppSettings.Settings["OutPath"].Value;
+                patchBaseBox.Text = config.AppSettings.Settings["BasePath"].Value;
+            }
             else
             {
-                FileStream fs = File.Open(fullFileName, FileMode.Open);
-                BinaryReader br = new BinaryReader(fs);
-                Unzip(ref br, fullFileName);
-                br.Close();
-                br.Dispose();
-            }
+                //Create setting entries.
+                config.AppSettings.Settings.Add("TempPath", "C:\\swtorTemp\\");
+                config.AppSettings.Settings.Add("OutPath", "C:\\swtorSelfPatch\\");
+                config.AppSettings.Settings.Add("BasePath", "C:\\Program Files (x86)\\Electronic Arts\\BioWare\\Star Wars - The Old Republic\\");
+                config.Save();
 
-            button1.Enabled = true;
-            textBox1.Enabled = true;
+                tempPathBox.Text = config.AppSettings.Settings["TempPath"].Value;
+                patchOutBox.Text = config.AppSettings.Settings["OutPath"].Value;
+                patchBaseBox.Text = config.AppSettings.Settings["BasePath"].Value;
+            }
         }
 
         private HashSet<string> Passwords { get; set; }
-        private bool Unzip(ref BinaryReader brReader, string fullFileName)
+        private bool Unzip(ref BinaryReader brReader, string fullFileName, bool execXdelta)
         {
-            listBox1.Items.Clear();
+            ClearItemList();
             var fileName = fullFileName.Substring(fullFileName.LastIndexOf("\\") + 1);
 
             if (brReader.BaseStream.Length < 0x1800)
@@ -74,8 +77,9 @@ namespace Unzipper
                         uint diskNumberStart = brReader.ReadUInt16(); // disk number start
                         brReader.ReadBytes(6);
                         uint relOffset = brReader.ReadUInt32(); // relative offset to local fileheader
-                        string curFileName = System.Text.Encoding.Default.GetString(brReader.ReadBytes((int)fileNameLength));
-                        
+                        string curFileName = Encoding.Default.GetString(brReader.ReadBytes((int)fileNameLength));
+                        string curFileNiceName = curFileName;
+
                         // read extra field
                         long extraFieldStart = brReader.BaseStream.Position;
                         byte[] password = { };
@@ -98,10 +102,10 @@ namespace Unzipper
                                     brReader.ReadBytes(56);
                                     switch (diffType)
                                     {
-                                        case 0: curFileName += " - Added"; break;
-                                        case 1: curFileName += " - Deleted"; break;
-                                        //case 2: curFileName += " - VCDIFF"; break;
-                                        case 3: curFileName += " - Unchanged"; break;
+                                        case 0: curFileNiceName += " - Added"; break;
+                                        case 1: curFileNiceName += " - Deleted"; break;
+                                        case 2: curFileNiceName += " - VCDIFF"; break;
+                                        case 3: curFileNiceName += " - Unchanged"; break;
                                     }
                                     break;
                                 default:
@@ -109,7 +113,7 @@ namespace Unzipper
                                     break;
                             }
                         }
-                        listBox1.Items.Add(curFileName);
+                        AddItem(curFileNiceName);
                         Application.DoEvents();
                         // go to local file header
                         if (centralDirOffset > 0)
@@ -117,7 +121,7 @@ namespace Unzipper
                             long oldPos = brReader.BaseStream.Position;
                             brReader.BaseStream.Position = centralDirPos - centralDirSize - centralDirOffset + relOffset;
                             ZipReader zipReader = new ZipReader(ref brReader);
-                            readLocalHeader(ref zipReader, password, fileName, curFileName, diffType);
+                            readLocalHeader(ref zipReader, password, fileName, curFileName, diffType, execXdelta);
                             brReader.BaseStream.Position = oldPos;
                         }
                         else
@@ -127,7 +131,7 @@ namespace Unzipper
                             //    continue;
                             //}
                             ZipReader zipReader = new ZipReader(fullFileName, (int)diskNumberStart, relOffset);
-                            readLocalHeader(ref zipReader, password, fileName, curFileName, diffType);
+                            readLocalHeader(ref zipReader, password, fileName, curFileName, diffType, execXdelta);
                             zipReader.Dispose();
                         }
                     }
@@ -141,7 +145,8 @@ namespace Unzipper
             return false;
         }
 
-        private void readLocalHeader(ref ZipReader brReader, byte[] password, string fileName, string curFileName, int diffType) {
+        private void readLocalHeader(ref ZipReader brReader, byte[] password, string fileName, string curFileName, int diffType, bool doPatch)
+        {
             if (brReader.ReadUInt32() != 0x4034B50) {
                 MessageBox.Show("ERROR: Magic number is wrong for local file header for " + curFileName + "; will skip that file");
                 return;
@@ -164,11 +169,11 @@ namespace Unzipper
                     MessageBox.Show("ERROR: The file " + curFileName + " was empty; it will not be extracted.");
                 //else
                     //added/changed/deleted
-                return;
+                //return;
             }
-            if ((bitflag & 1) == 1) {// if it has encryption
+            if (uncomprSize > 0 && (bitflag & 1) == 1) {// if it has encryption
                                      // modify password
-                modifyPassword(ref password);if 
+                modifyPassword(ref password); 
                 //initialize keys
                 uint key_0 = 0x12345678;
                 uint key_1 = 0x23456789;
@@ -186,7 +191,7 @@ namespace Unzipper
                 }
                 System.Array.Copy(file, 12, file, 0, file.Length - 12);
             }
-            if (compression == 8) { //uncompress file
+            if (uncomprSize > 0 && compression == 8) { //uncompress file
                 try {
                     //using (System.IO.FileStream file2 = new System.IO.FileStream("i:\\"+ curFileName, FileMode.Create, FileAccess.Write))
                     //{
@@ -200,17 +205,100 @@ namespace Unzipper
                     return;
                 }
             }
-            else if (compression > 0) {
+            else if (uncomprSize > 0 && compression > 0) {
                 MessageBox.Show("ERROR: The compression " + compression + " was not recognized in " + curFileName);
                 return;
             }
             //extract file
-            string fullName = "I:\\jedipedia\\builds\\xdiffs\\" + fileName.Replace(".", "-") + "\\" + curFileName.Replace("/", "\\");
-            if (fullName.Contains("\\"))
-                Directory.CreateDirectory(fullName.Substring(0, fullName.LastIndexOf("\\")));
-            File.WriteAllBytes(fullName, file);
+            if (!doPatch && uncomprSize > 0)
+            {
+                //Just write the data without patching.
+                string fullName = tempPathBox.Text + fileName.Replace(".", "-") + "\\" + curFileName.Replace("/", "\\");
+                if (fullName.Contains("\\"))
+                    Directory.CreateDirectory(fullName.Substring(0, fullName.LastIndexOf("\\")));
 
-            File.SetLastWriteTime(fullName, new DateTime(1980 + (lastModDate >> 9), (lastModDate & 0x1E0) >> 5, lastModDate & 0x1F, lastModTime >> 11, (lastModTime & 0x7E0) >> 5, (lastModTime & 0x1F) * 2));
+                File.WriteAllBytes(fullName, file);
+                File.SetLastWriteTime(fullName, new DateTime(1980 + (lastModDate >> 9), (lastModDate & 0x1E0) >> 5, lastModDate & 0x1F, lastModTime >> 11, (lastModTime & 0x7E0) >> 5, (lastModTime & 0x1F) * 2));
+            } else
+            {
+                //Perform patching.
+                switch (diffType)
+                {
+                    case 0:
+                        {
+                            //Added
+                            string fullName = patchOutBox.Text + curFileName.Replace("/", "\\");
+                            if (fullName.Contains("\\"))
+                            {
+                                //Just in case the patch output path wasn't created ahead of time.
+                                Directory.CreateDirectory(fullName.Substring(0, fullName.LastIndexOf("\\")));
+                            }
+
+                            //Write data and set timestamp. Existing file should be overwritten.
+                            File.WriteAllBytes(fullName, file);
+                            File.SetLastWriteTime(fullName, new DateTime(1980 + (lastModDate >> 9), (lastModDate & 0x1E0) >> 5, lastModDate & 0x1F, lastModTime >> 11, (lastModTime & 0x7E0) >> 5, (lastModTime & 0x1F) * 2));
+                            break;
+                        }
+                        
+                    case 1:
+                        {
+                            //Deleted. Does this ever get used?
+                            string fullName = patchOutBox.Text + curFileName.Replace("/", "\\");
+                            if (File.Exists(fullName))
+                            {
+                                File.Delete(fullName);
+                            }
+                            break;
+                        }
+                    case 2:
+                        {
+                            //VCDIFF. Use Xdelta to patch.
+                            //Extract data to temp folder.
+                            string tempName = tempPathBox.Text + fileName.Replace(".", "-") + "\\" + curFileName.Replace("/", "\\");
+                            if (tempName.Contains("\\"))
+                                Directory.CreateDirectory(tempName.Substring(0, tempName.LastIndexOf("\\")));
+
+                            File.WriteAllBytes(tempName, file);
+                            DateTime fileTimestamp = new DateTime(1980 + (lastModDate >> 9), (lastModDate & 0x1E0) >> 5, lastModDate & 0x1F, lastModTime >> 11, (lastModTime & 0x7E0) >> 5, (lastModTime & 0x1F) * 2);
+                            File.SetLastWriteTime(tempName, fileTimestamp);
+
+                            //Get output path and source path.
+                            string patchName = patchOutBox.Text + curFileName.Replace("/", "\\");
+                            string baseName = patchName.Replace(patchOutBox.Text, patchBaseBox.Text);
+
+                            using (Process deltaProcess = new Process())
+                            {
+                                //Maybe this shouldn't be hard coded? Could do this in memory instead to.
+                                deltaProcess.StartInfo.FileName = "xdelta3-x86_64-3.0.10.exe";
+
+                                deltaProcess.StartInfo.CreateNoWindow = true;
+                                deltaProcess.StartInfo.UseShellExecute = false;
+                                deltaProcess.StartInfo.Arguments = "-d -s \"" + baseName + "\" \"" + tempName + "\" \"" + patchName + "\"";
+                                deltaProcess.Start();
+                                AddItem("Started patching " + curFileName);
+                                deltaProcess.WaitForExit();
+                            }
+
+                            //Set the timestamp on the patched file.
+                            File.SetLastWriteTime(patchName, fileTimestamp);
+                            //Delete the temp patch file.
+                            File.Delete(tempName);
+
+                            break;
+                        }
+                    case 3:
+                        {
+                            //No changes. Update timestamp.
+                            string fullName = patchOutBox.Text + curFileName.Replace("/", "\\");
+                            if (File.Exists(fullName))
+                            {
+                                File.SetLastWriteTime(fullName, new DateTime(1980 + (lastModDate >> 9), (lastModDate & 0x1E0) >> 5, lastModDate & 0x1F, lastModTime >> 11, (lastModTime & 0x7E0) >> 5, (lastModTime & 0x1F) * 2));
+                            }
+
+                            break;
+                        }
+                }
+            }
         }
 
         private void modifyPassword(ref byte[] pwd) {
@@ -259,7 +347,7 @@ namespace Unzipper
             item.SubItems.Add(this.uintToHex(key_0));
             item.SubItems.Add(this.uintToHex(key_1));
             item.SubItems.Add(this.uintToHex(key_2));
-            this.listBox1.Items.Add(item);
+            AddItem(item);
         }
 
         private string uintToHex(uint inty) {
@@ -297,12 +385,209 @@ namespace Unzipper
             return (uint)((((crc & 0xFFFFFF00) >> 8) & 0xFFFFFF) ^ TLookup[(crc & 0xFF) ^ Convert.ToUInt16(c)]);
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void patchBrowse_Click(object sender, EventArgs e)
         {
             OpenFileDialog fbd = new OpenFileDialog();
             fbd.FileName = textBox1.Text;
             if(fbd.ShowDialog() ==DialogResult.OK)
                 textBox1.Text = fbd.FileName;
+        }
+
+        private void tempBrowse_Click(object sender, EventArgs e)
+        {
+            string tempPath = BrowseDirectory("Select folder to extract and download files to.");
+            if(tempPath.Length > 0)
+            {
+                tempPathBox.Text = tempPath;
+            }
+        }
+
+        private void outBrowse_Click(object sender, EventArgs e)
+        {
+            string outPath = BrowseDirectory("Select folder to write patch output to.");
+            if (outPath.Length > 0)
+            {
+                patchOutBox.Text = outPath;
+            }
+        }
+
+        private void patchBaseBrowseBtn_Click(object sender, EventArgs e)
+        {
+            string outPath = BrowseDirectory("Select folder to get files to use as the source for patching.");
+            if (outPath.Length > 0)
+            {
+                patchBaseBox.Text = outPath;
+            }
+        }
+
+        private string BrowseDirectory(string desc)
+        {
+            FolderBrowserDialog fbd = new FolderBrowserDialog();
+            fbd.ShowNewFolderButton = true;
+            fbd.Description = desc;
+            if(fbd.ShowDialog() == DialogResult.OK)
+            {
+                return fbd.SelectedPath;
+            } else
+            {
+                return string.Empty;
+            }
+        }
+
+        private void tempPathBox_TextChanged(object sender, EventArgs e)
+        {
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            config.AppSettings.Settings["TempPath"].Value = tempPathBox.Text;
+            config.Save();    
+        }
+
+        private void patchOutBox_TextChanged(object sender, EventArgs e)
+        {
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            config.AppSettings.Settings["OutPath"].Value = patchOutBox.Text;
+            config.Save();
+        }
+
+        private void patchBaseBox_TextChanged(object sender, EventArgs e)
+        {
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            config.AppSettings.Settings["BasePath"].Value = patchBaseBox.Text;
+            config.Save();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            if(!tempPathBox.Text.EndsWith("\\"))
+            {
+                tempPathBox.Text += "\\";
+            }
+            if(!patchBaseBox.Text.EndsWith("\\"))
+            {
+                patchBaseBox.Text += "\\";
+            }
+            if(!patchOutBox.Text.EndsWith("\\"))
+            {
+                patchOutBox.Text += "\\";
+            }
+
+            textBox1.Enabled = false;
+            tempPathBox.Enabled = false;
+            patchOutBox.Enabled = false;
+            patchBaseBox.Enabled = false;
+
+            patchBrowse.Enabled = false;
+            tempBrowse.Enabled = false;
+            outBrowse.Enabled = false;
+            patchBaseBrowseBtn.Enabled = false;
+
+            button1.Enabled = false;
+            extractAndPatchButton.Enabled = false;
+            //searchPatchBtn.Enabled = false;
+            //checkBox1.Enabled = false;
+
+            string fullFileName = textBox1.Text;
+            if (!File.Exists(fullFileName))
+            {
+                MessageBox.Show("ERROR: The requested file " + fullFileName + " does not exist.");
+            }
+            else
+            {
+                extractWorker1.RunWorkerAsync(false);
+            }
+        }
+
+        private void extractAndPatchButton_Click(object sender, EventArgs e)
+        {
+            if (!tempPathBox.Text.EndsWith("\\"))
+            {
+                tempPathBox.Text += "\\";
+            }
+            if (!patchBaseBox.Text.EndsWith("\\"))
+            {
+                patchBaseBox.Text += "\\";
+            }
+            if (!patchOutBox.Text.EndsWith("\\"))
+            {
+                patchOutBox.Text += "\\";
+            }
+
+            textBox1.Enabled = false;
+            tempPathBox.Enabled = false;
+            patchOutBox.Enabled = false;
+            patchBaseBox.Enabled = false;
+
+            patchBrowse.Enabled = false;
+            tempBrowse.Enabled = false;
+            outBrowse.Enabled = false;
+            patchBaseBrowseBtn.Enabled = false;
+
+            button1.Enabled = false;
+            extractAndPatchButton.Enabled = false;
+            //searchPatchBtn.Enabled = false;
+            //checkBox1.Enabled = false;
+            string fullFileName = textBox1.Text;
+            if (!File.Exists(fullFileName))
+            {
+                MessageBox.Show("ERROR: The requested file " + fullFileName + " does not exist.");
+            }
+            else
+            {
+                extractWorker1.RunWorkerAsync(true);
+            }
+        }
+
+        private void ClearItemList()
+        {
+            if(listBox1.InvokeRequired)
+            {
+                listBox1.Invoke((MethodInvoker)(() => listBox1.Items.Clear()));
+            } else
+            {
+                listBox1.Items.Clear();
+            }
+        }
+
+        private void AddItem(object item)
+        {
+            if (listBox1.InvokeRequired)
+            {
+                listBox1.Invoke((MethodInvoker)(() => listBox1.Items.Add(item)));
+            }
+            else
+            {
+                listBox1.Items.Add(item);
+            }
+        }
+
+        private void extractWorker1_DoWork(object sender, DoWorkEventArgs e)
+        {
+            string fullFileName = textBox1.Text;
+            bool doPatch = (bool)e.Argument;
+
+            FileStream fs = File.Open(fullFileName, FileMode.Open);
+            BinaryReader br = new BinaryReader(fs);
+            Unzip(ref br, fullFileName, doPatch);
+            br.Close();
+            br.Dispose();
+        }
+
+        private void extractWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            textBox1.Enabled = true;
+            tempPathBox.Enabled = true;
+            patchOutBox.Enabled = true;
+            patchBaseBox.Enabled = true;
+
+            patchBrowse.Enabled = true;
+            tempBrowse.Enabled = true;
+            outBrowse.Enabled = true;
+            patchBaseBrowseBtn.Enabled = true;
+
+            button1.Enabled = true;
+            extractAndPatchButton.Enabled = true;
+            //searchPatchBtn.Enabled = true;
+            //checkBox1.Enabled = true;
+
         }
     }
 }
