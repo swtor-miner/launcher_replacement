@@ -114,7 +114,6 @@ namespace Unzipper
                             }
                         }
                         AddItem(curFileNiceName);
-                        Application.DoEvents();
                         // go to local file header
                         if (centralDirOffset > 0)
                         { // local headers are stored in this file
