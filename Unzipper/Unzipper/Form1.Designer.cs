@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.button1 = new System.Windows.Forms.Button();
             this.listBox1 = new System.Windows.Forms.ListBox();
@@ -46,6 +47,8 @@
             this.patchBaseBrowseBtn = new System.Windows.Forms.Button();
             this.label4 = new System.Windows.Forms.Label();
             this.extractWorker1 = new System.ComponentModel.BackgroundWorker();
+            this.useSymChk = new System.Windows.Forms.CheckBox();
+            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.SuspendLayout();
             // 
             // textBox1
@@ -209,11 +212,23 @@
             this.extractWorker1.DoWork += new System.ComponentModel.DoWorkEventHandler(this.extractWorker1_DoWork);
             this.extractWorker1.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.extractWorker1_RunWorkerCompleted);
             // 
+            // useSymChk
+            // 
+            this.useSymChk.AutoSize = true;
+            this.useSymChk.Location = new System.Drawing.Point(346, 124);
+            this.useSymChk.Name = "useSymChk";
+            this.useSymChk.Size = new System.Drawing.Size(89, 17);
+            this.useSymChk.TabIndex = 17;
+            this.useSymChk.Text = "Use Symlinks";
+            this.toolTip1.SetToolTip(this.useSymChk, "When patching create a symlink back to the patch base for unchanged files.\r\n");
+            this.useSymChk.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(522, 430);
+            this.Controls.Add(this.useSymChk);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.patchBaseBrowseBtn);
             this.Controls.Add(this.patchBaseBox);
@@ -258,6 +273,8 @@
         private System.Windows.Forms.Button patchBaseBrowseBtn;
         private System.Windows.Forms.Label label4;
         private System.ComponentModel.BackgroundWorker extractWorker1;
+        private System.Windows.Forms.CheckBox useSymChk;
+        private System.Windows.Forms.ToolTip toolTip1;
     }
 }
 

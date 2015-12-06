@@ -11,6 +11,7 @@ using System.IO;
 using Ionic.Zip;
 using System.Configuration;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Unzipper
 {
@@ -188,7 +189,8 @@ namespace Unzipper
                     file[i] = (byte)(file[i] ^ decrypt_byte(key_2));
                     updateKeys(file[i], ref key_0, ref key_1, ref key_2);
                 }
-                System.Array.Copy(file, 12, file, 0, file.Length - 12);
+                //Remove the ZipCrypto header. Should probably use this to verify password just in case?
+                Array.Copy(file, 12, file, 0, file.Length - 12);
             }
             if (uncomprSize > 0 && compression == 8) { //uncompress file
                 try {
@@ -264,6 +266,11 @@ namespace Unzipper
                             //Get output path and source path.
                             string patchName = patchOutBox.Text + curFileName.Replace("/", "\\");
                             string baseName = patchName.Replace(patchOutBox.Text, patchBaseBox.Text);
+                            if(patchName.Contains("\\"))
+                            {
+                                Directory.CreateDirectory(patchName.Substring(0, patchName.LastIndexOf("\\")));
+                            }
+
 
                             using (Process deltaProcess = new Process())
                             {
@@ -272,9 +279,12 @@ namespace Unzipper
 
                                 deltaProcess.StartInfo.CreateNoWindow = true;
                                 deltaProcess.StartInfo.UseShellExecute = false;
+                                deltaProcess.StartInfo.RedirectStandardOutput = true;
                                 deltaProcess.StartInfo.Arguments = "-d -s \"" + baseName + "\" \"" + tempName + "\" \"" + patchName + "\"";
                                 deltaProcess.Start();
                                 AddItem("Started patching " + curFileName);
+                                string output = deltaProcess.StandardOutput.ReadToEnd();
+                                Console.WriteLine(output);
                                 deltaProcess.WaitForExit();
                             }
 
@@ -287,11 +297,32 @@ namespace Unzipper
                         }
                     case 3:
                         {
-                            //No changes. Update timestamp.
                             string fullName = patchOutBox.Text + curFileName.Replace("/", "\\");
-                            if (File.Exists(fullName))
+                            if (!useSymChk.Checked)
                             {
-                                File.SetLastWriteTime(fullName, new DateTime(1980 + (lastModDate >> 9), (lastModDate & 0x1E0) >> 5, lastModDate & 0x1F, lastModTime >> 11, (lastModTime & 0x7E0) >> 5, (lastModTime & 0x1F) * 2));
+                                //No changes. Not using sym links. Update timestamp.
+                                if (File.Exists(fullName))
+                                {
+                                    File.SetLastWriteTime(fullName, new DateTime(1980 + (lastModDate >> 9), (lastModDate & 0x1E0) >> 5, lastModDate & 0x1F, lastModTime >> 11, (lastModTime & 0x7E0) >> 5, (lastModTime & 0x1F) * 2));
+                                }
+                            } else
+                            {
+                                //No changes. Using sym link, link back to base.
+                                if (fullName.Contains("\\"))
+                                {
+                                    //Just in case the patch output path wasn't created ahead of time.
+                                    Directory.CreateDirectory(fullName.Substring(0, fullName.LastIndexOf("\\")));
+                                }
+
+                                string baseName = patchBaseBox.Text + curFileName.Replace("/", "\\");
+                                if (File.Exists(baseName) && !File.Exists(fullName))
+                                {
+                                    if(!CreateSymbolicLink(fullName, baseName))
+                                    {
+                                        //Sym link failed?!?
+                                        throw new Exception();
+                                    }
+                                }
                             }
 
                             break;
@@ -329,15 +360,15 @@ namespace Unzipper
         }
 
         private void updateKeys(byte curChar, ref uint key_0, ref uint key_1, ref uint key_2) {
-            key_0 = crc32(key_0, curChar);
-            key_1 = Convert.ToUInt32(((long)key_1 + (long)(key_0 & 0xFF)) & 0xFFFFFFFF);
-            key_1 = Convert.ToUInt32(((long)key_1 * 134775813 + 1) & 0xFFFFFFFF);
-            key_2 = crc32(key_2, Convert.ToByte(key_1 >> 24));
+            key_0 = crc32(key_0, curChar);;
+            key_1 += (byte)key_0;
+            key_1 = key_1 * 0x08088405 + 1;
+            key_2 = crc32(key_2, (byte)(key_1 >> 24));
         }
 
         private byte decrypt_byte(uint key_2) {
-            ushort temp = (ushort)(Convert.ToUInt16(key_2 & 0xFFFF) | 2);
-            return Convert.ToByte(((Convert.ToUInt32(temp) * Convert.ToUInt32((temp ^ 1))) >> 8) & 0xFF);
+            ushort t = (ushort)((ushort)(key_2 & 0xFFFF) | 2);
+            return (byte)((t * (t ^ 1)) >> 8);
         }
 
         private void outputHashes(uint key_0, uint key_1, uint key_2, byte curChar)
@@ -361,7 +392,7 @@ namespace Unzipper
             return strTemp.ToString();
         }
 
-        private uint[] TLookup = new uint[] {
+        private static readonly uint[] TLookup = new uint[] {
                 0, 0x77073096, 0xee0e612c, 0x990951ba, 0x76dc419, 0x706af48f, 0xe963a535, 0x9e6495a3, 0xedb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988, 0x9b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91,
                 0x1db71064, 0x6ab020f2, 0xf3b97148, 0x84be41de, 0x1adad47d, 0x6ddde4eb, 0xf4d4b551, 0x83d385c7, 0x136c9856, 0x646ba8c0, 0xfd62f97a, 0x8a65c9ec, 0x14015c4f, 0x63066cd9, 0xfa0f3d63, 0x8d080df5,
                 0x3b6e20c8, 0x4c69105e, 0xd56041e4, 0xa2677172, 0x3c03e4d1, 0x4b04d447, 0xd20d85fd, 0xa50ab56b, 0x35b5a8fa, 0x42b2986c, 0xdbbbc9d6, 0xacbcf940, 0x32d86ce3, 0x45df5c75, 0xdcd60dcf, 0xabd13d59,
@@ -381,7 +412,7 @@ namespace Unzipper
              };
         private uint crc32(uint crc, byte c)
         {
-            return (uint)((((crc & 0xFFFFFF00) >> 8) & 0xFFFFFF) ^ TLookup[(crc & 0xFF) ^ Convert.ToUInt16(c)]);
+            return TLookup[(crc ^ c) & 0xFF] ^ (crc >> 8);
         }
 
         private void patchBrowse_Click(object sender, EventArgs e)
@@ -481,6 +512,7 @@ namespace Unzipper
 
             button1.Enabled = false;
             extractAndPatchButton.Enabled = false;
+            useSymChk.Enabled = false;
             //searchPatchBtn.Enabled = false;
             //checkBox1.Enabled = false;
 
@@ -563,15 +595,21 @@ namespace Unzipper
             string fullFileName = textBox1.Text;
             bool doPatch = (bool)e.Argument;
 
-            FileStream fs = File.Open(fullFileName, FileMode.Open);
-            BinaryReader br = new BinaryReader(fs);
-            Unzip(ref br, fullFileName, doPatch);
-            br.Close();
-            br.Dispose();
+            using (FileStream fs = File.Open(fullFileName, FileMode.Open))
+            {
+                BinaryReader br = new BinaryReader(fs);
+                Unzip(ref br, fullFileName, doPatch);
+                br.Close();
+                br.Dispose();
+            }
         }
 
         private void extractWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
+            //Free up any memory when we are done.
+            System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
+
             textBox1.Enabled = true;
             tempPathBox.Enabled = true;
             patchOutBox.Enabled = true;
@@ -584,10 +622,27 @@ namespace Unzipper
 
             button1.Enabled = true;
             extractAndPatchButton.Enabled = true;
+            useSymChk.Enabled = true;
             //searchPatchBtn.Enabled = true;
             //checkBox1.Enabled = true;
 
         }
+
+        //Invoke Windows API for sym link.
+        enum SymbolicLink
+        {
+            File = 0,
+            Directory = 1
+        }
+
+        /// <summary>
+        /// Create a symbolic link.</summary>
+        /// <param name="lpSymlinkFileName">Where to create the symbolic link.</param>
+        /// <param name="lpTargetFileName">Where the symbolic link points to (source file / directory).</param>
+        /// <param name="dwFlags">Link for a file or a directory? Default = file.</param>
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        static extern bool CreateSymbolicLink(string lpSymlinkFileName, string lpTargetFileName, SymbolicLink dwFlags = SymbolicLink.File);
     }
 }
 
@@ -624,9 +679,11 @@ public class ZipReader {
                 brReader.Dispose();
                 // read part 2
                 disknumber += 1;
-                FileStream fileStream = new FileStream(fileName.Replace(".zip", ".z" + (disknumber + 1).ToString("D2")), FileMode.Open, FileAccess.Read);
-                brReader = new BinaryReader(fileStream);
-                brReader.Read(output, output.Length - count, count);
+                using (FileStream fileStream = new FileStream(fileName.Replace(".zip", ".z" + (disknumber + 1).ToString("D2")), FileMode.Open, FileAccess.Read))
+                {
+                    brReader = new BinaryReader(fileStream);
+                    brReader.Read(output, output.Length - count, count);
+                }
                 // return output
                 return output;
             }
