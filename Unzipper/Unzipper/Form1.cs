@@ -45,8 +45,12 @@ namespace Unzipper
         }
 
         private HashSet<string> Passwords { get; set; }
+        private HashSet<string> DeletedArchives { get; set; }
+        private string ArchiveType;
         private bool Unzip(ref BinaryReader brReader, string fullFileName, bool execXdelta)
         {
+            ArchiveType = "";
+            DeletedArchives = new HashSet<string>();
             ClearItemList();
             var fileName = fullFileName.Substring(fullFileName.LastIndexOf("\\") + 1);
 
@@ -137,6 +141,53 @@ namespace Unzipper
                     }
                     brReader.BaseStream.Position = centralDirPos - centralDirSize - centralDirOffset;
                     while (brReader.ReadUInt32() == 0x4034B50) { }
+
+                    if (ArchiveType.Length > 0 && execXdelta && useSymChk.Checked)
+                    {
+                        //When we have succesfully finished reading the archive if we are using symlinks and patching create symlinks for assets folder.
+                        string patchBaseDir = patchBaseBox.Text;
+                        if(!patchBaseDir.EndsWith("\\"))
+                        {
+                            patchBaseDir += "\\Assets\\";
+                        } else
+                        {
+                            patchBaseDir += "Assets\\";
+                        }
+
+                        if(!Directory.Exists(patchBaseDir))
+                        {
+                            //Make sure the base has assets.
+                            return true;
+                        }
+
+                        string[] basePatchFiles = Directory.GetFiles(patchBaseDir);
+                        string patchTargetDir = patchOutBox.Text;
+                        if(!patchTargetDir.EndsWith("\\"))
+                        {
+                            patchTargetDir += "\\Assets\\";
+                        } else
+                        {
+                            patchTargetDir += "Assets\\";
+                        }
+                        Directory.CreateDirectory(patchTargetDir);
+
+                        foreach(string basePatchFilePath in basePatchFiles)
+                        {
+                            string basePatchFileName = basePatchFilePath.Substring(basePatchFilePath.LastIndexOf("\\") + 1);
+                            if(DeletedArchives.Contains(basePatchFileName) || !basePatchFileName.Contains(ArchiveType))
+                            {
+                                //Don't symlink deleted archives and only sym link archives of this patch type
+                                continue;
+                            }
+
+                            if(!File.Exists(patchTargetDir + basePatchFileName))
+                            {
+                                //Check to make sure the target file doesn't exist and then create the symlink.
+                                CreateSymbolicLink(patchTargetDir + basePatchFileName, basePatchFilePath);
+                            }
+                        }
+                    }
+
                     return true;
                 }
                 brReader.BaseStream.Position -= 5; // go back one byte (plus the four bytes we//ve just read)
@@ -222,6 +273,40 @@ namespace Unzipper
                 File.SetLastWriteTime(fullName, new DateTime(1980 + (lastModDate >> 9), (lastModDate & 0x1E0) >> 5, lastModDate & 0x1F, lastModTime >> 11, (lastModTime & 0x7E0) >> 5, (lastModTime & 0x1F) * 2));
             } else
             {
+                if(ArchiveType.Length == 0)
+                {
+                    //Determine asset names to symlink later. We can count on the version file being here.
+                    switch (curFileName)
+                    {
+                        case "assets_swtor_main.version":
+                            ArchiveType = "swtor_main_";
+                            break;
+                        case "assets_swtor_en_us.version":
+                            ArchiveType = "swtor_en_us_";
+                            break;
+                        case "assets_swtor_de_de.version":
+                            ArchiveType = "swtor_en_us_";
+                            break;
+                        case "assets_swtor_fr_fr.version":
+                            ArchiveType = "swtor_en_us_";
+                            break;
+                        case "assets_swtor_test_main.version":
+                            ArchiveType = "swtor_test_main_";
+                            break;
+                        case "assets_swtor_test_en_us.version":
+                            ArchiveType = "swtor_test_en_us_";
+                            break;
+                        case "assets_swtor_test_de_de.version":
+                            ArchiveType = "swtor_test_en_us_";
+                            break;
+                        case "assets_swtor_test_fr_fr.version":
+                            ArchiveType = "swtor_test_en_us_";
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
                 //Perform patching.
                 switch (diffType)
                 {
@@ -243,8 +328,9 @@ namespace Unzipper
                         
                     case 1:
                         {
-                            //Deleted. Does this ever get used?
+                            //Deleted.
                             string fullName = patchOutBox.Text + curFileName.Replace("/", "\\");
+                            DeletedArchives.Add(curFileName);
                             if (File.Exists(fullName))
                             {
                                 File.Delete(fullName);
@@ -271,6 +357,11 @@ namespace Unzipper
                                 Directory.CreateDirectory(patchName.Substring(0, patchName.LastIndexOf("\\")));
                             }
 
+                            if(File.Exists(patchName))
+                            {
+                                //If file exists then delete it. Used due to symlinks potentially being here.
+                                File.Delete(patchName);
+                            }
 
                             using (Process deltaProcess = new Process())
                             {
