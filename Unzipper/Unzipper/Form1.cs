@@ -276,35 +276,36 @@ namespace Unzipper
                 if(ArchiveType.Length == 0)
                 {
                     //Determine asset names to symlink later. We can count on the version file being here.
-                    switch (curFileName)
-                    {
-                        case "assets_swtor_main.version":
-                            ArchiveType = "swtor_main_";
-                            break;
-                        case "assets_swtor_en_us.version":
-                            ArchiveType = "swtor_en_us_";
-                            break;
-                        case "assets_swtor_de_de.version":
-                            ArchiveType = "swtor_en_us_";
-                            break;
-                        case "assets_swtor_fr_fr.version":
-                            ArchiveType = "swtor_en_us_";
-                            break;
-                        case "assets_swtor_test_main.version":
-                            ArchiveType = "swtor_test_main_";
-                            break;
-                        case "assets_swtor_test_en_us.version":
-                            ArchiveType = "swtor_test_en_us_";
-                            break;
-                        case "assets_swtor_test_de_de.version":
-                            ArchiveType = "swtor_test_en_us_";
-                            break;
-                        case "assets_swtor_test_fr_fr.version":
-                            ArchiveType = "swtor_test_en_us_";
-                            break;
-                        default:
-                            break;
-                    }
+                    ArchiveType = (curFileName ?? "").Replace("assets_", "").Replace(".version", "_");
+                    //switch (curFileName)
+                    //{
+                    //    case "assets_swtor_main.version":
+                    //        ArchiveType = "swtor_main_";
+                    //        break;
+                    //    case "assets_swtor_en_us.version":
+                    //        ArchiveType = "swtor_en_us_";
+                    //        break;
+                    //    case "assets_swtor_de_de.version":
+                    //        ArchiveType = "swtor_en_us_";
+                    //        break;
+                    //    case "assets_swtor_fr_fr.version":
+                    //        ArchiveType = "swtor_en_us_";
+                    //        break;
+                    //    case "assets_swtor_test_main.version":
+                    //        ArchiveType = "swtor_test_main_";
+                    //        break;
+                    //    case "assets_swtor_test_en_us.version":
+                    //        ArchiveType = "swtor_test_en_us_";
+                    //        break;
+                    //    case "assets_swtor_test_de_de.version":
+                    //        ArchiveType = "swtor_test_en_us_";
+                    //        break;
+                    //    case "assets_swtor_test_fr_fr.version":
+                    //        ArchiveType = "swtor_test_en_us_";
+                    //        break;
+                    //    default:
+                    //        break;
+                    //}
                 }
 
                 //Perform patching.
