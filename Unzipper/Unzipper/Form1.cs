@@ -263,6 +263,14 @@ namespace Unzipper
             //checkBox1.Enabled = true;
 
         }
+
+        private void scan_button_Click(object sender, EventArgs e)
+        {
+            scan_button.Enabled = false;
+            ScanBuilds testFile = new ScanBuilds(tempPathBox.Text);
+            DialogResult result = testFile.ShowDialog();
+            scan_button.Enabled = true;
+        }
     }
 }
 

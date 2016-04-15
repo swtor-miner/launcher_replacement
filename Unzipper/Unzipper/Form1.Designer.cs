@@ -49,6 +49,7 @@
             this.extractWorker1 = new System.ComponentModel.BackgroundWorker();
             this.useSymChk = new System.Windows.Forms.CheckBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.scan_button = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // textBox1
@@ -73,7 +74,7 @@
             this.listBox1.FormattingEnabled = true;
             this.listBox1.Location = new System.Drawing.Point(7, 167);
             this.listBox1.Name = "listBox1";
-            this.listBox1.Size = new System.Drawing.Size(507, 251);
+            this.listBox1.Size = new System.Drawing.Size(588, 251);
             this.listBox1.TabIndex = 2;
             // 
             // patchBrowse
@@ -223,11 +224,22 @@
             this.toolTip1.SetToolTip(this.useSymChk, "When patching create a symlink back to the patch base for unchanged files.\r\n");
             this.useSymChk.UseVisualStyleBackColor = true;
             // 
+            // scan_button
+            // 
+            this.scan_button.Location = new System.Drawing.Point(520, 137);
+            this.scan_button.Name = "scan_button";
+            this.scan_button.Size = new System.Drawing.Size(75, 23);
+            this.scan_button.TabIndex = 18;
+            this.scan_button.Text = "Scan Builds";
+            this.scan_button.UseVisualStyleBackColor = true;
+            this.scan_button.Click += new System.EventHandler(this.scan_button_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(522, 430);
+            this.ClientSize = new System.Drawing.Size(604, 430);
+            this.Controls.Add(this.scan_button);
             this.Controls.Add(this.useSymChk);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.patchBaseBrowseBtn);
@@ -275,6 +287,7 @@
         private System.ComponentModel.BackgroundWorker extractWorker1;
         private System.Windows.Forms.CheckBox useSymChk;
         private System.Windows.Forms.ToolTip toolTip1;
+        private System.Windows.Forms.Button scan_button;
     }
 }
 

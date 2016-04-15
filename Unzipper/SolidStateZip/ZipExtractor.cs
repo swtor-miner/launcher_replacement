@@ -186,6 +186,174 @@ namespace SolidStateZip
             return false;
         }
 
+        public Stream UnzipSingleFile(ref BinaryReader brReader, string targetFile)
+        {
+            ArchiveType = "";
+            DeletedArchives = new HashSet<string>();
+
+            if (brReader.BaseStream.Length < 0x1800)
+            {
+                MessageBox.Show("ERROR: The file is too small to be a zip file.");
+                return null;
+            }
+            brReader.BaseStream.Position = brReader.BaseStream.Length - 4L; // = size of certificates + end of central dir
+            // find end of central dir
+            while (brReader.BaseStream.Position > 0)
+            {
+                if (brReader.ReadUInt32() == 0x6054B50)
+                {
+                    long centralDirPos = brReader.BaseStream.Position - 4L;
+                    ushort numDisks = brReader.ReadUInt16();
+                    brReader.ReadBytes(4); // skip number of disk with start of central directory AND total number of entries in central dir on this disk
+                    ushort numFiles = brReader.ReadUInt16();
+                    uint centralDirSize = brReader.ReadUInt32();
+                    uint centralDirOffset = brReader.ReadUInt32();
+                    // go to central file headers
+                    brReader.BaseStream.Position = centralDirPos - centralDirSize;
+                    while (brReader.ReadUInt32() == 0x2014B50)
+                    {
+                        brReader.ReadBytes(24);
+                        uint fileNameLength = brReader.ReadUInt16();
+                        uint extraFieldLength = brReader.ReadUInt16();
+                        brReader.ReadBytes(2);
+                        uint diskNumberStart = brReader.ReadUInt16(); // disk number start
+                        brReader.ReadBytes(6);
+                        uint relOffset = brReader.ReadUInt32(); // relative offset to local fileheader
+                        string curFileName = Encoding.Default.GetString(brReader.ReadBytes((int)fileNameLength));
+                        string curFileNiceName = curFileName;
+                        if (curFileName != targetFile)
+                            return null;
+
+                        // read extra field
+                        long extraFieldStart = brReader.BaseStream.Position;
+                        byte[] password = { };
+                        int diffType = -1;
+                        while (brReader.BaseStream.Position + 4 <= extraFieldStart + extraFieldLength)
+                        {
+                            ushort tmpId = brReader.ReadUInt16();
+                            ushort tmpSize = brReader.ReadUInt16();
+                            //if (tmpId == 0x8810)// password in unmodified form
+                            //    password = brReader.ReadBytes(tmpSize);
+                            //else
+                            //    brReader.ReadBytes(tmpSize);
+                            switch (tmpId)
+                            {
+                                case 0x8810:
+                                    password = brReader.ReadBytes(tmpSize);
+                                    break;
+                                case 0x80AE:
+                                    diffType = (int)brReader.ReadUInt32();
+                                    brReader.ReadBytes(56);
+                                    switch (diffType)
+                                    {
+                                        case 0: curFileNiceName += " - Added"; break;
+                                        case 1: curFileNiceName += " - Deleted"; break;
+                                        case 2: curFileNiceName += " - VCDIFF"; break;
+                                        case 3: curFileNiceName += " - Unchanged"; break;
+                                    }
+                                    break;
+                                default:
+                                    brReader.ReadBytes(tmpSize);
+                                    break;
+                            }
+                        }
+                        if (MessageDelegate != null)
+                            InvokeMessage(curFileNiceName);
+                        // go to local file header
+                        if (centralDirOffset > 0)
+                        { // local headers are stored in this file
+                            long oldPos = brReader.BaseStream.Position;
+                            brReader.BaseStream.Position = centralDirPos - centralDirSize - centralDirOffset + relOffset;
+                            ZipReader zipReader = new ZipReader(ref brReader);
+                            //readLocalHeader(ref zipReader, password, "", curFileName, diffType, false);
+                            if (brReader.ReadUInt32() != 0x4034B50)
+                            {
+                                MessageBox.Show("ERROR: Magic number is wrong for local file header for manifext.xml");
+                                return null;
+                            }
+                            brReader.ReadBytes(2); // skip version
+                            ushort bitflag = brReader.ReadUInt16();
+                            ushort compression = brReader.ReadUInt16();
+                            ushort lastModTime = brReader.ReadUInt16();
+                            ushort lastModDate = brReader.ReadUInt16();
+                            brReader.ReadBytes(4); // skip CRC
+                            uint comprSize = brReader.ReadUInt32();
+                            uint uncomprSize = brReader.ReadUInt32();
+                            ushort manFileNameLength = brReader.ReadUInt16();
+                            ushort manExtraFieldLength = brReader.ReadUInt16();
+                            brReader.ReadBytes(manFileNameLength);
+                            brReader.ReadBytes(manExtraFieldLength); // skip extra field
+                            byte[] file = brReader.ReadBytes((int)comprSize); // read file
+                            if (uncomprSize == 0)
+                            {
+                                MessageBox.Show("ERROR: The file manifest.xml was empty; it will not be extracted.");
+                            }
+                            if (uncomprSize > 0 && (bitflag & 1) == 1)
+                            {// if it has encryption
+                             // modify password
+                                modifyPassword(ref password);
+                                //initialize keys
+                                uint key_0 = 0x12345678;
+                                uint key_1 = 0x23456789;
+                                uint key_2 = 0x34567890;
+                                //update keys against password
+                                for (int i = 0; i < password.Length; i++)
+                                {
+                                    if (password[i] == 0) break;
+                                    updateKeys(password[i], ref key_0, ref key_1, ref key_2);
+                                }
+                                //decrypt file
+                                for (int i = 0; i < file.Length; i++)
+                                {
+                                    file[i] = (byte)(file[i] ^ decrypt_byte(key_2));
+                                    updateKeys(file[i], ref key_0, ref key_1, ref key_2);
+                                }
+                                //Remove the ZipCrypto header. Should probably use this to verify password just in case?
+                                Array.Copy(file, 12, file, 0, file.Length - 12);
+                            }
+                            if (uncomprSize > 0 && compression == 8)
+                            { //uncompress file
+                                try
+                                {
+                                    //using (System.IO.FileStream file2 = new System.IO.FileStream("i:\\"+ curFileName, FileMode.Create, FileAccess.Write))
+                                    //{
+                                    //    file2.Write(file, 0, file.Length);
+                                    //}
+                                    file = Ionic.Zlib.DeflateStream.UncompressBuffer(file);
+
+                                }
+                                catch (Exception e)
+                                {
+                                    MessageBox.Show("ERROR: Something went wrong, could not uncompress:" + Environment.NewLine + e.ToString());
+                                    return null;
+                                }
+                            }
+                            else if (uncomprSize > 0 && compression > 0)
+                            {
+                                MessageBox.Show("ERROR: The compression " + compression + " was not recognized in " + curFileName);
+                                return null;
+                            }
+                            //extract file
+                            if (uncomprSize > 0)
+                            {
+                                MemoryStream memStream = new MemoryStream(file);
+                                return memStream;
+                            }
+                            brReader.BaseStream.Position = oldPos;
+                        }
+                    }
+                    brReader.BaseStream.Position = centralDirPos - centralDirSize - centralDirOffset;
+                    while (brReader.ReadUInt32() == 0x4034B50) { }
+
+                    
+                }
+                brReader.BaseStream.Position -= 5; // go back one byte (plus the four bytes we//ve just read)
+            }
+            //MessageBox.Show("ERROR: The end of central dir could not be found in " + fullFileName + ".");
+            //return false;
+            return null;
+        }
+
         private void readLocalHeader(ref ZipReader brReader, byte[] password, string fileName, string curFileName, int diffType, bool doPatch)
         {
             if (brReader.ReadUInt32() != 0x4034B50)
