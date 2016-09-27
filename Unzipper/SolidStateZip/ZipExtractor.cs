@@ -5,6 +5,8 @@ using System.Windows.Forms;
 using System.IO;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
+using System.ComponentModel;
 
 namespace SolidStateZip
 {
@@ -134,37 +136,37 @@ namespace SolidStateZip
                     {
                         //When we have succesfully finished reading the archive if we are using symlinks and patching create symlinks for assets folder.
                         string patchBaseDir = baseFileDir;
-                        if (!patchBaseDir.EndsWith("\\"))
-                        {
-                            patchBaseDir += "\\Assets\\";
-                        }
-                        else
-                        {
-                            patchBaseDir += "Assets\\";
-                        }
+                        //if (!patchBaseDir.EndsWith("\\"))
+                        //{
+                        //    patchBaseDir += "\\Assets\\";
+                        //}
+                        //else
+                        //{
+                        //    patchBaseDir += "Assets\\";
+                        //}
 
-                        if (!Directory.Exists(patchBaseDir))
-                        {
-                            //Make sure the base has assets.
-                            return true;
-                        }
+                        //if (!Directory.Exists(patchBaseDir))
+                        //{
+                        //    //Make sure the base has assets.
+                        //    return true;
+                        //}
 
-                        string[] basePatchFiles = Directory.GetFiles(patchBaseDir);
+                        string[] basePatchFiles = Directory.GetFiles(patchBaseDir, "*", SearchOption.AllDirectories);
                         string patchTargetDir = outputDir;
-                        if (!patchTargetDir.EndsWith("\\"))
-                        {
-                            patchTargetDir += "\\Assets\\";
-                        }
-                        else
-                        {
-                            patchTargetDir += "Assets\\";
-                        }
+                        //if (!patchTargetDir.EndsWith("\\"))
+                        //{
+                        //    patchTargetDir += "\\Assets\\";
+                        //}
+                        //else
+                        //{
+                        //    patchTargetDir += "Assets\\";
+                        //}
                         Directory.CreateDirectory(patchTargetDir);
 
                         foreach (string basePatchFilePath in basePatchFiles)
                         {
-                            string basePatchFileName = basePatchFilePath.Substring(basePatchFilePath.LastIndexOf("\\") + 1);
-                            if (DeletedArchives.Contains(basePatchFileName) || !basePatchFileName.Contains(ArchiveType))
+                            string basePatchFileName = basePatchFilePath.Replace(patchBaseDir, "");
+                            if (DeletedArchives.Contains(basePatchFileName)) // || !basePatchFileName.Contains(ArchiveType))
                             {
                                 //Don't symlink deleted archives and only sym link archives of this patch type
                                 continue;
@@ -173,7 +175,11 @@ namespace SolidStateZip
                             if (!File.Exists(patchTargetDir + basePatchFileName))
                             {
                                 //Check to make sure the target file doesn't exist and then create the symlink.
-                                CreateSymbolicLink(patchTargetDir + basePatchFileName, basePatchFilePath);
+                                string patchFileName = patchTargetDir + basePatchFileName;
+                                string patchDir = patchFileName.Substring(0, patchFileName.LastIndexOf("\\"));
+                                Directory.CreateDirectory(patchDir);
+                                CreateSafeSymbolicLink(patchFileName, basePatchFilePath);
+
                             }
                         }
                     }
@@ -443,7 +449,9 @@ namespace SolidStateZip
                 if (ArchiveType.Length == 0)
                 {
                     //Determine asset names to symlink later. We can count on the version file being here.
-                    ArchiveType = (curFileName ?? "").Replace("assets_", "").Replace(".version", "_");
+                    
+                    ArchiveType = fileName.Substring(0, fileName.LastIndexOf('_') + 1).Replace("assets_", "");
+                    //ArchiveType = (curFileName ?? "").Replace("assets_", "").Replace(".version", "_");
                     //switch (curFileName)
                     //{
                     //    case "assets_swtor_main.version":
@@ -499,10 +507,51 @@ namespace SolidStateZip
                             //Deleted.
                             string fullName = outputDir + curFileName.Replace("/", "\\");
                             DeletedArchives.Add(curFileName);
-                            if (File.Exists(fullName))
+                            ////////////////
+                            WIN32_FIND_DATA findData;
+                            FINDEX_INFO_LEVELS findInfoLevel = FINDEX_INFO_LEVELS.FindExInfoStandard;
+                            int additionalFlags = FIND_FIRST_EX_CASE_SENSITIVE;
+                            if (Environment.OSVersion.Version.Major >= 6)
                             {
-                                File.Delete(fullName);
+                                findInfoLevel = FINDEX_INFO_LEVELS.FindExInfoBasic;
+                                additionalFlags = additionalFlags | FIND_FIRST_EX_LARGE_FETCH;
                             }
+
+                            IntPtr hFile = FindFirstFileEx(
+                            fullName,
+                            findInfoLevel,
+                            out findData,
+                            FINDEX_SEARCH_OPS.FindExSearchNameMatch,
+                            IntPtr.Zero,
+                            additionalFlags);
+                            int error = Marshal.GetLastWin32Error();
+
+                            if (hFile.ToInt32() != -1)
+                            {
+                                do
+                                {
+                                    if ((FileAttributes)(findData.dwFileAttributes & (uint)FileAttributes.Directory) != FileAttributes.Directory)
+                                    {
+                                        string curName = curFileName.Substring(curFileName.LastIndexOf("/") + 1);
+                                        if (findData.cFileName == curName) {
+                                            File.Delete(fullName);
+                                            Console.WriteLine("Found file {0}", findData.cFileName);
+                                        }
+                                        else
+                                        {
+                                            string sdifnlks = "";
+                                        }
+                                    }
+                                }
+                                while (FindNextFile(hFile, out findData));
+
+                                FindClose(hFile);
+                            }
+                            /////////////////////////
+                            //if (File.Exists(fullName))
+                            //{
+                            //    File.Delete(fullName);
+                            //}
                             break;
                         }
                     case 2:
@@ -539,11 +588,12 @@ namespace SolidStateZip
                                 deltaProcess.StartInfo.CreateNoWindow = true;
                                 deltaProcess.StartInfo.UseShellExecute = false;
                                 deltaProcess.StartInfo.RedirectStandardOutput = true;
+                                deltaProcess.StartInfo.RedirectStandardError = true;
                                 deltaProcess.StartInfo.Arguments = "-d -s \"" + baseName + "\" \"" + tempName + "\" \"" + patchName + "\"";
                                 deltaProcess.Start();
+                                string output = deltaProcess.StandardOutput.ReadToEnd();
                                 if (MessageDelegate != null)
                                     InvokeMessage("Started patching " + curFileName);
-                                string output = deltaProcess.StandardOutput.ReadToEnd();
                                 Console.WriteLine(output);
                                 deltaProcess.WaitForExit();
                             }
@@ -578,7 +628,7 @@ namespace SolidStateZip
                                 string baseName = baseFileDir + curFileName.Replace("/", "\\");
                                 if (File.Exists(baseName) && !File.Exists(fullName))
                                 {
-                                    if (!CreateSymbolicLink(fullName, baseName))
+                                    if (!CreateSafeSymbolicLink(fullName, baseName))
                                     {
                                         //Sym link failed?!?
                                         throw new Exception();
@@ -697,5 +747,95 @@ namespace SolidStateZip
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.I1)]
         static extern bool CreateSymbolicLink(string lpSymlinkFileName, string lpTargetFileName, SymbolicLink dwFlags = SymbolicLink.File);
+        
+        public static bool CreateSafeSymbolicLink(string lpSymlinkFileName, string lpTargetFileName)
+        {
+            // Check to make sure the target isn't a Symlink. Apparently chaining symlinks is bad, mkay?
+            DirectoryInfo dInfo = new DirectoryInfo(lpTargetFileName);
+            string actualPath = GetSymbolicLinkTarget(dInfo);
+            if (actualPath != lpTargetFileName)
+                return CreateSymbolicLink(lpSymlinkFileName, actualPath);
+            else
+                return CreateSymbolicLink(lpSymlinkFileName, lpTargetFileName);
+        }
+
+        private const int FILE_SHARE_READ = 1;
+        private const int FILE_SHARE_WRITE = 2;
+
+        private const int CREATION_DISPOSITION_OPEN_EXISTING = 3;
+
+        private const int FILE_FLAG_BACKUP_SEMANTICS = 0x02000000;
+
+        // http://msdn.microsoft.com/en-us/library/aa364962%28VS.85%29.aspx
+        [DllImport("kernel32.dll", EntryPoint = "GetFinalPathNameByHandleW", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern int GetFinalPathNameByHandle(IntPtr handle, [In, Out] StringBuilder path, int bufLen, int flags);
+
+        // http://msdn.microsoft.com/en-us/library/aa363858(VS.85).aspx
+        [DllImport("kernel32.dll", EntryPoint = "CreateFileW", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern SafeFileHandle CreateFile(string lpFileName, int dwDesiredAccess, int dwShareMode,
+        IntPtr SecurityAttributes, int dwCreationDisposition, int dwFlagsAndAttributes, IntPtr hTemplateFile);
+
+        public static string GetSymbolicLinkTarget(DirectoryInfo symlink)
+        {
+            SafeFileHandle directoryHandle = CreateFile(symlink.FullName, 0, 2, System.IntPtr.Zero, CREATION_DISPOSITION_OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, System.IntPtr.Zero);
+            if (directoryHandle.IsInvalid)
+                return symlink.FullName;
+
+            StringBuilder path = new StringBuilder(512);
+            int size = GetFinalPathNameByHandle(directoryHandle.DangerousGetHandle(), path, path.Capacity, 0);
+            if (size < 0)
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+            // The remarks section of GetFinalPathNameByHandle mentions the return being prefixed with "\\?\"
+            // More information about "\\?\" here -> http://msdn.microsoft.com/en-us/library/aa365247(v=VS.85).aspx
+            if (path[0] == '\\' && path[1] == '\\' && path[2] == '?' && path[3] == '\\')
+                return path.ToString().Substring(4);
+            else
+                return path.ToString();
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        public static extern IntPtr FindFirstFileEx(
+            string lpFileName,
+            FINDEX_INFO_LEVELS fInfoLevelId,
+            out WIN32_FIND_DATA lpFindFileData,
+            FINDEX_SEARCH_OPS fSearchOp,
+            IntPtr lpSearchFilter,
+            int dwAdditionalFlags);
+        public enum FINDEX_INFO_LEVELS
+        {
+            FindExInfoStandard = 0,
+            FindExInfoBasic = 1
+        }
+        public enum FINDEX_SEARCH_OPS
+        {
+            FindExSearchNameMatch = 0,
+            FindExSearchLimitToDirectories = 1,
+            FindExSearchLimitToDevices = 2
+        }
+        // dwAdditionalFlags:
+        public const int FIND_FIRST_EX_CASE_SENSITIVE = 1;
+        public const int FIND_FIRST_EX_LARGE_FETCH = 2;
+        // The CharSet must match the CharSet of the corresponding PInvoke signature
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        public struct WIN32_FIND_DATA
+        {
+            public uint dwFileAttributes;
+            public System.Runtime.InteropServices.ComTypes.FILETIME ftCreationTime;
+            public System.Runtime.InteropServices.ComTypes.FILETIME ftLastAccessTime;
+            public System.Runtime.InteropServices.ComTypes.FILETIME ftLastWriteTime;
+            public uint nFileSizeHigh;
+            public uint nFileSizeLow;
+            public uint dwReserved0;
+            public uint dwReserved1;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+            public string cFileName;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 14)]
+            public string cAlternateFileName;
+        }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
+        static extern bool FindNextFile(IntPtr hFindFile, out WIN32_FIND_DATA lpFindFileData);
+        [DllImport("kernel32.dll")]
+        public static extern bool FindClose(IntPtr hFindFile);
     }
 }

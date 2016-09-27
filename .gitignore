@@ -194,3 +194,6 @@ FakesAssemblies/
 
 # Visual Studio 6 workspace options file
 *.opt
+/Unzipper/Unzipper/BencodeNET.1.2.1/lib
+/Unzipper/Unzipper/DotNetZip.1.9.6/lib/net20
+/Unzipper/Unzipper/zlib.net.1.0.4.0/lib

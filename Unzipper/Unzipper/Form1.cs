@@ -267,7 +267,7 @@ namespace Unzipper
         private void scan_button_Click(object sender, EventArgs e)
         {
             scan_button.Enabled = false;
-            ScanBuilds testFile = new ScanBuilds(tempPathBox.Text);
+            ScanBuilds testFile = new ScanBuilds(useSymChk.Checked, patchOutBox.Text, tempPathBox.Text, patchBaseBox.Text);
             DialogResult result = testFile.ShowDialog();
             scan_button.Enabled = true;
         }
