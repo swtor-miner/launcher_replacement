@@ -427,6 +427,7 @@ namespace SolidStateZip
                 MessageBox.Show("ERROR: The compression " + compression + " was not recognized in " + curFileName);
                 return;
             }
+            var date = new DateTime(1980 + (lastModDate >> 9), (lastModDate & 0x1E0) >> 5, lastModDate & 0x1F, lastModTime >> 11, (lastModTime & 0x7E0) >> 5, (lastModTime & 0x1F) * 2);
             //extract file
             if (!doPatch && uncomprSize > 0)
             {
@@ -434,9 +435,11 @@ namespace SolidStateZip
                 string fullName = tempDir + fileName.Replace(".", "-") + "\\" + curFileName.Replace("/", "\\");
                 if (fullName.Contains("\\"))
                     Directory.CreateDirectory(fullName.Substring(0, fullName.LastIndexOf("\\")));
-
-                File.WriteAllBytes(fullName, file);
-                File.SetLastWriteTime(fullName, new DateTime(1980 + (lastModDate >> 9), (lastModDate & 0x1E0) >> 5, lastModDate & 0x1F, lastModTime >> 11, (lastModTime & 0x7E0) >> 5, (lastModTime & 0x1F) * 2));
+                if (!(File.Exists(fullName) && File.GetLastAccessTime(fullName) == date))
+                {
+                    File.WriteAllBytes(fullName, file);
+                    File.SetLastWriteTime(fullName, date);
+                }
             }
             else
             {
@@ -489,8 +492,11 @@ namespace SolidStateZip
                             }
 
                             //Write data and set timestamp. Existing file should be overwritten.
-                            File.WriteAllBytes(fullName, file);
-                            File.SetLastWriteTime(fullName, new DateTime(1980 + (lastModDate >> 9), (lastModDate & 0x1E0) >> 5, lastModDate & 0x1F, lastModTime >> 11, (lastModTime & 0x7E0) >> 5, (lastModTime & 0x1F) * 2));
+                            if (!(File.Exists(fullName) && File.GetLastAccessTime(fullName) == date))
+                            {
+                                File.WriteAllBytes(fullName, file);
+                                File.SetLastWriteTime(fullName, date);
+                            }
                             break;
                         }
 
@@ -527,8 +533,16 @@ namespace SolidStateZip
 
                             if (File.Exists(patchName))
                             {
-                                //If file exists then delete it. Used due to symlinks potentially being here.
-                                File.Delete(patchName);
+                                    if (File.GetLastWriteTime(patchName) != date)
+                                    {
+                                        //If file exists then delete it. Used due to symlinks potentially being here.
+                                        File.Delete(patchName);
+                                    }
+                                    else
+                                    {
+                                        File.Delete(tempName);
+                                        break;
+                                    }
                             }
 
                             using (Process deltaProcess = new Process())

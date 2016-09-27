@@ -223,6 +223,18 @@ namespace Unzipper
             }
         }
 
+        private void ToggleButtons(object enable)
+        {
+            if (listBox1.InvokeRequired)
+            {
+                extractAndPatchButton.Invoke((MethodInvoker)(() => extractAndPatchButton.Enabled = (bool)enable));
+            }
+            else
+            {
+                extractAndPatchButton.Enabled = (bool)enable;
+            }
+        }
+
         private void extractWorker1_DoWork(object sender, DoWorkEventArgs e)
         {
             string fullFileName = textBox1.Text;
@@ -233,10 +245,13 @@ namespace Unzipper
                 BinaryReader br = new BinaryReader(fs);
                 ClearItemList();
 
+                ToggleButtons(false);
                 ZipExtractor = new ZipExtractor(AddItem, useSymChk.Checked, patchBaseBox.Text, patchOutBox.Text, tempPathBox.Text);
                 ZipExtractor.Unzip(ref br, fullFileName, doPatch);
                 br.Close();
                 br.Dispose();
+                this.AddItem("Complete");
+                ToggleButtons(true);
             }
         }
 
