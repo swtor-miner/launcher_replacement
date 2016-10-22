@@ -251,6 +251,13 @@ namespace Unzipper
                 br.Close();
                 br.Dispose();
                 this.AddItem("Complete");
+                if (ZipExtractor.errorOccurred)
+                {
+                    int count = 1;
+                    if (ZipExtractor.errorTexts != null)
+                        count = ZipExtractor.errorTexts.Count();
+                    MessageBox.Show(String.Format("{0} error(s) have occurred.\n{1}", count, String.Join(Environment.NewLine, ZipExtractor.errorTexts)));
+                }
                 ToggleButtons(true);
             }
         }

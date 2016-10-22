@@ -30,6 +30,8 @@ namespace SolidStateZip
             }
         }
         bool useSymChk { get; set; }
+        public bool errorOccurred = false;
+        public List<string> errorTexts { get; set; }
         string baseFileDir { get; set; }
         string outputDir { get; set; }
         string tempDir { get; set; }
@@ -446,6 +448,10 @@ namespace SolidStateZip
                     File.WriteAllBytes(fullName, file);
                     File.SetLastWriteTime(fullName, date);
                 }
+                else
+                {
+                    long length = new System.IO.FileInfo(fullName).Length;
+                }
             }
             else
             {
@@ -593,7 +599,8 @@ namespace SolidStateZip
                                         break;
                                     }
                             }
-
+                            string output;
+                            string error;
                             using (Process deltaProcess = new Process())
                             {
                                 //Maybe this shouldn't be hard coded? Could do this in memory instead to.
@@ -604,16 +611,31 @@ namespace SolidStateZip
                                 deltaProcess.StartInfo.RedirectStandardOutput = true;
                                 deltaProcess.StartInfo.RedirectStandardError = true;
                                 deltaProcess.StartInfo.Arguments = "-d -s \"" + baseName + "\" \"" + tempName + "\" \"" + patchName + "\"";
-                                deltaProcess.Start();
-                                string output = deltaProcess.StandardOutput.ReadToEnd();
                                 if (MessageDelegate != null)
                                     InvokeMessage("Started patching " + curFileName);
-                                Console.WriteLine(output);
+                                deltaProcess.Start();
+                                output = deltaProcess.StandardOutput.ReadToEnd();
+                                error = deltaProcess.StandardError.ReadToEnd();
+                                if (MessageDelegate != null)
+                                {
+                                    if(!String.IsNullOrWhiteSpace(output))
+                                        InvokeMessage(output);
+                                    if (!String.IsNullOrWhiteSpace(error))
+                                    {
+                                        if (errorTexts == null)
+                                            errorTexts = new List<string>();
+                                        errorTexts.Add(error);
+                                        errorOccurred = true;
+                                        InvokeMessage(error);
+                                    }
+                                }
                                 deltaProcess.WaitForExit();
                             }
-
-                            //Set the timestamp on the patched file.
-                            File.SetLastWriteTime(patchName, fileTimestamp);
+                            if (String.IsNullOrWhiteSpace(error))
+                            {
+                                //Set the timestamp on the patched file.
+                                File.SetLastWriteTime(patchName, fileTimestamp);
+                            }
                             //Delete the temp patch file.
                             File.Delete(tempName);
 
