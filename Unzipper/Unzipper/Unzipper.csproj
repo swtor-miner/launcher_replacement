@@ -129,6 +129,12 @@
     <Folder Include="DotNetZip.1.9.6\" />
     <Folder Include="zlib.net.1.0.4.0\" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="patches.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
+    </Content>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
