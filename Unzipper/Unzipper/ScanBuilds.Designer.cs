@@ -38,6 +38,10 @@
             this.db_button = new System.Windows.Forms.Button();
             this.sym_button = new System.Windows.Forms.Button();
             this.output_button = new System.Windows.Forms.Button();
+            this.OverallProgressBar = new System.Windows.Forms.ProgressBar();
+            this.Manual_Button = new System.Windows.Forms.Button();
+            this.ptsCheckBox = new System.Windows.Forms.CheckBox();
+            this.upcoming_button = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // scan_listBox
@@ -45,7 +49,7 @@
             this.scan_listBox.FormattingEnabled = true;
             this.scan_listBox.Location = new System.Drawing.Point(12, 13);
             this.scan_listBox.Name = "scan_listBox";
-            this.scan_listBox.Size = new System.Drawing.Size(723, 329);
+            this.scan_listBox.Size = new System.Drawing.Size(723, 316);
             this.scan_listBox.TabIndex = 0;
             // 
             // scan_button
@@ -74,9 +78,9 @@
             // 
             // Download_progressBar
             // 
-            this.Download_progressBar.Location = new System.Drawing.Point(13, 355);
+            this.Download_progressBar.Location = new System.Drawing.Point(13, 368);
             this.Download_progressBar.Name = "Download_progressBar";
-            this.Download_progressBar.Size = new System.Drawing.Size(722, 23);
+            this.Download_progressBar.Size = new System.Drawing.Size(722, 10);
             this.Download_progressBar.TabIndex = 3;
             // 
             // Download_TextBox
@@ -103,7 +107,7 @@
             this.db_button.Name = "db_button";
             this.db_button.Size = new System.Drawing.Size(75, 23);
             this.db_button.TabIndex = 6;
-            this.db_button.Text = "DB";
+            this.db_button.Text = "Save Patches";
             this.db_button.UseVisualStyleBackColor = true;
             this.db_button.Click += new System.EventHandler(this.db_button_Click);
             // 
@@ -127,11 +131,53 @@
             this.output_button.UseVisualStyleBackColor = true;
             this.output_button.Click += new System.EventHandler(this.output_button_Click);
             // 
+            // OverallProgressBar
+            // 
+            this.OverallProgressBar.Location = new System.Drawing.Point(13, 339);
+            this.OverallProgressBar.Name = "OverallProgressBar";
+            this.OverallProgressBar.Size = new System.Drawing.Size(722, 23);
+            this.OverallProgressBar.TabIndex = 9;
+            // 
+            // Manual_Button
+            // 
+            this.Manual_Button.Location = new System.Drawing.Point(741, 306);
+            this.Manual_Button.Name = "Manual_Button";
+            this.Manual_Button.Size = new System.Drawing.Size(75, 23);
+            this.Manual_Button.TabIndex = 10;
+            this.Manual_Button.Text = "Manual";
+            this.Manual_Button.UseVisualStyleBackColor = true;
+            this.Manual_Button.Click += new System.EventHandler(this.Manual_Button_Click);
+            // 
+            // ptsCheckBox
+            // 
+            this.ptsCheckBox.AutoSize = true;
+            this.ptsCheckBox.Location = new System.Drawing.Point(741, 339);
+            this.ptsCheckBox.Name = "ptsCheckBox";
+            this.ptsCheckBox.Size = new System.Drawing.Size(47, 17);
+            this.ptsCheckBox.TabIndex = 11;
+            this.ptsCheckBox.Text = "PTS";
+            this.ptsCheckBox.UseVisualStyleBackColor = true;
+            this.ptsCheckBox.CheckedChanged += new System.EventHandler(this.ptsCheckBox_CheckedChanged);
+            // 
+            // upcoming_button
+            // 
+            this.upcoming_button.Location = new System.Drawing.Point(741, 186);
+            this.upcoming_button.Name = "upcoming_button";
+            this.upcoming_button.Size = new System.Drawing.Size(75, 23);
+            this.upcoming_button.TabIndex = 12;
+            this.upcoming_button.Text = "Upcoming";
+            this.upcoming_button.UseVisualStyleBackColor = true;
+            this.upcoming_button.Click += new System.EventHandler(this.upcoming_button_Click);
+            // 
             // ScanBuilds
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(828, 414);
+            this.Controls.Add(this.upcoming_button);
+            this.Controls.Add(this.ptsCheckBox);
+            this.Controls.Add(this.Manual_Button);
+            this.Controls.Add(this.OverallProgressBar);
             this.Controls.Add(this.output_button);
             this.Controls.Add(this.sym_button);
             this.Controls.Add(this.db_button);
@@ -160,5 +206,9 @@
         private System.Windows.Forms.Button db_button;
         private System.Windows.Forms.Button sym_button;
         private System.Windows.Forms.Button output_button;
+        private System.Windows.Forms.ProgressBar OverallProgressBar;
+        private System.Windows.Forms.Button Manual_Button;
+        private System.Windows.Forms.CheckBox ptsCheckBox;
+        private System.Windows.Forms.Button upcoming_button;
     }
 }
