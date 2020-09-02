@@ -116,7 +116,6 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <None Include="app.manifest" />
-    <None Include="ClassDiagram1.cd" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -132,6 +131,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Repos\research-bittorrent\BitTorrent\BitTorrent.csproj">
+      <Project>{05551e96-a709-4790-9256-77b375cef51e}</Project>
+      <Name>BitTorrent</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SolidStateZip\SolidStateLib.csproj">
       <Project>{f636d4a2-3025-4f9c-b25e-963355200d48}</Project>
       <Name>SolidStateLib</Name>

@@ -538,7 +538,7 @@ namespace SolidStateZip
                             additionalFlags);
                             int error = Marshal.GetLastWin32Error();
 
-                            if (hFile.ToInt32() != -1)
+                            if (hFile.ToInt64() != -1)
                             {
                                 do
                                 {

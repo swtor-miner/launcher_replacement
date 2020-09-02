@@ -36,10 +36,16 @@ namespace Unzipper
                 "assets_swtor_test_main",
                 "retailclient_publictest",
                 "assets_swtor_test_en_us",
-                "assets_swtor_test_de_de",
-                "assets_swtor_test_fr_fr",
+                //"assets_swtor_test_de_de",
+                //"assets_swtor_test_fr_fr",
                 }
             },
+            {"Beta", new List<string>() {
+                "retailclient_squadron157",
+                "red_assets_en_us",
+                "red_assets_main",
+                }
+            }
         };
         public List<string> manifests = new List<string>() {
             //"movies_en_us",
@@ -141,11 +147,44 @@ namespace Unzipper
             return null;
         }
 
+        private Stream LoadLocalAndUnzipFileToStream(string url, string filename)
+        {
+            try
+            {
+                if (File.Exists(url))
+                {
+                    using (Stream stream = File.OpenRead(url))
+                    {
+                        using (MemoryStream memStream = new MemoryStream())
+                        {
+                            stream.CopyTo(memStream);
+                            memStream.Position = 0;
+                            BinaryReader brReader = new BinaryReader(memStream);
+                            return ZipExtractor.UnzipSingleFile(ref brReader, filename);
+                        }
+                    }
+                }
+            }
+            catch (WebException ex)
+            {
+                AddItem(String.Format("Url: {0}", url));
+                AddItem(String.Format("File: {0}", filename));
+                AddItem(String.Format("Error: {0}", ex.Message));
+                if (ex.Status == WebExceptionStatus.ProtocolError)
+                {
+                    AddItem(String.Format("Status Code : {0}", ((HttpWebResponse)ex.Response).StatusCode));
+                    AddItem(String.Format("Status Description : {0}", ((HttpWebResponse)ex.Response).StatusDescription));
+                }
+            }
+            return null;
+        }
+
         enum WalkType
         {
             Scan = 0,
             Download = 1,
-            Extract = 2
+            Extract = 2,
+            Verify = 3
         }
         private async void Walk_Builds(WalkType wtype)
         {
@@ -165,6 +204,8 @@ namespace Unzipper
                     file.Write("");
                 System.IO.StreamWriter file2 = new System.IO.StreamWriter(String.Format("{0}{1}.txt", outputDir, mankey), true);
                 Stream rawXML = DownloadAndUnzipFileToStream(String.Format("http://manifest.swtor.com/patch/{0}.patchmanifest", mankey), "manifest.xml");
+                if (rawXML == null) continue;
+                //Stream rawXML = LoadLocalAndUnzipFileToStream("E:\\swtor\\beta\\red\\SWTOR\\patch\\Host.8f0ca3b5a8cfebd48d06cfc6021936a55ea4f0b5\\64207dd70022986c01c63a027196b9913ef5a3a3.patchmanifest", "manifest.xml");
                 AddItem(mankey);
                 System.Xml.Linq.XDocument manifest = System.Xml.Linq.XDocument.Load(rawXML);
 
@@ -181,9 +222,11 @@ namespace Unzipper
                         "retailclient_publictest_41to44",
                         "retailclient_publictest_41to45",
                         "assets_swtor_test_main_225to245",
+                        "assets_swtor_test_main_0to263",
                         "assets_swtor_test_en_us_0to244",
                         "assets_swtor_test_fr_fr_0to244",
                         "assets_swtor_test_de_de_0to244",
+                        "assets_swtor_test_de_de_0to262",
                     };
                 HashSet<string> skipList = new HashSet<string>()
                     {
@@ -193,12 +236,16 @@ namespace Unzipper
                         "assets_swtor_test_fr_fr_110to111",
                         "assets_swtor_test_main_243to244",
                         "assets_swtor_test_main_244to245",
+                        "assets_swtor_test_main_261to262",
+                        "assets_swtor_test_main_262to263",
                         "assets_swtor_test_en_us_242to243",
                         "assets_swtor_test_en_us_243to244",
                         "assets_swtor_test_fr_fr_242to243",
                         "assets_swtor_test_fr_fr_243to244",
                         "assets_swtor_test_de_de_242to243",
                         "assets_swtor_test_de_de_243to244",
+                        "assets_swtor_test_de_de_260to261",
+                        "assets_swtor_test_de_de_261to262",
                     };
                 int u = 0;
                 foreach (var update in updates)
@@ -246,9 +293,9 @@ namespace Unzipper
 
             Stream rawMetaFile = null;
             int i = 0;
+            var cache_file = String.Format(@"cache/{0}_{1}to{2}.metafile.solid", mankey, from, to);
             while (rawMetaFile == null && i < 5)
             {
-                var cache_file = String.Format(@"cache/{0}_{1}to{2}.metafile.solid", mankey, from, to);
                 if (System.IO.File.Exists(cache_file))
                 {
                     using (FileStream file = new FileStream(cache_file, FileMode.Open, FileAccess.Read))
@@ -328,16 +375,31 @@ namespace Unzipper
                     //    }
                     //}
                     break;
+                case WalkType.Verify:
+                    string tit = decoded["title"].ToString();
+                    string verifyDirectory = String.Format("{0}files\\{1}\\", outputDir, tit).Replace(": ", "_");
+                    var torrent = BitTorrent.Torrent.LoadFromFile(cache_file, verifyDirectory);
+                    //for(int p =0; p < torrent.PieceCount; p++)
+                    //{
+                    //    torrent.Verify(p);
+                    //}
+                    if (torrent.VerifiedRatio != 1)
+                    {
+                        //MessageBox.Show(String.Format("A file failed verification: {0}", tit));
+                        file2.Write(String.Format("A file failed verification: {0}", tit), true);
+                    }
+                    break;
                 case WalkType.Download:
                     BencodeNET.Objects.BList files = ((BencodeNET.Objects.BList)((BencodeNET.Objects.BDictionary)decoded["info"])["files"]);
                     string title = decoded["title"].ToString();
                     string reliable = decoded["reliable"].ToString();
+                    string outputDirectory = String.Format("{0}files\\{1}\\", outputDir, title).Replace(": ", "_");
+
                     foreach (var bFile in files)
                     {
                         BencodeNET.Objects.BDictionary dict = bFile as BencodeNET.Objects.BDictionary;
                         string filename = ((BencodeNET.Objects.BList)dict["path"])[0].ToString();
-
-                        string outputDirectory = String.Format("{0}files\\{1}\\", outputDir, title).Replace(": ", "_");
+                        
                         string outputFilename = String.Format("{0}{1}", outputDirectory, filename);
                         string downloadUrl = String.Format("{0}{1}", reliable, filename);
                         Directory.CreateDirectory(outputDirectory);
@@ -431,6 +493,7 @@ namespace Unzipper
                         if (mankey.Contains("main"))
                             main_sym_dir = upcoming_release.ToString();
                         WalkBuild(WalkType.Download, metaFileUrl, mankey, current_release, upcoming_release, file2);
+                        WalkBuild(WalkType.Verify, metaFileUrl, mankey, current_release, upcoming_release, file2);
                         if (!Directory.Exists(String.Format("{0}\\base\\{1}\\{2}\\", outputDir, mankey, upcoming_release)))
                             WalkBuild(WalkType.Extract, metaFileUrl, mankey, current_release, upcoming_release, file2);
                         string source = String.Format("{0}\\base\\{1}\\{2}\\", baseDir, mankey, upcoming_release);
@@ -748,8 +811,24 @@ namespace Unzipper
         {
             if (ptsCheckBox.Checked)
             {
+                betaCheckBox.Checked = false;
                 manifests = full_manifests["PTS"];
                 patch_file = @"pts.xml";
+            }
+            else
+            {
+                manifests = full_manifests["Live"];
+                patch_file = @"patches.xml";
+            }
+        }
+
+        private void betaCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            if (betaCheckBox.Checked)
+            {
+                ptsCheckBox.Checked = false;
+                manifests = full_manifests["Beta"];
+                patch_file = @"beta.xml";
             }
             else
             {
@@ -763,6 +842,11 @@ namespace Unzipper
             var db_worker = new BackgroundWorker();
             db_worker.DoWork += new DoWorkEventHandler(DBWorker_DoWork);
             db_worker.RunWorkerAsync(WorkerFuncs.Upcoming);
+        }
+
+        private void verify_button_Click(object sender, EventArgs e)
+        {
+            WalkWorker.RunWorkerAsync(WalkType.Verify);
         }
     }
 }
