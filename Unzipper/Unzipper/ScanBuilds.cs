@@ -681,6 +681,8 @@ namespace Unzipper
             OverallProgressChanged(this, 0);
             int count = patchEles.Count();
             int i = 0;
+
+            XElement prevElement = null;
             foreach (var element in patchEles)
             {
                 string target = String.Format("{0}\\patches\\{1}\\", outputDir, element.Attribute("version").Value);
@@ -689,9 +691,29 @@ namespace Unzipper
                 {
                     if (element.Attribute(mankey) == null)
                         continue;
-                    string source = String.Format("{0}\\base\\{1}\\{2}\\", baseDir, mankey, element.Attribute(mankey).Value);
+                    //fix for missing files
+
+                    string source = "";
+                    //workaround for missing files
+                    if (i == 0)
+                    {
+                        int val = 0;
+                        int.TryParse(element.Attribute(mankey).Value, out val);
+                        for (int j = -1; j < val; j++)
+                        {
+                            source = String.Format("{0}\\base\\{1}\\{2}\\", baseDir, mankey, j);
+                            SymLink_Dir(target, source);
+                        }
+                    }
+                    else if (prevElement != null)
+                    {
+                        source = String.Format("{0}\\base\\{1}\\{2}\\", baseDir, mankey, prevElement.Attribute(mankey).Value);
+                        SymLink_Dir(target, source);
+                    }
+                    source = String.Format("{0}\\base\\{1}\\{2}\\", baseDir, mankey, element.Attribute(mankey).Value);
                     SymLink_Dir(target, source);
                 }
+                prevElement = element;
                 i++;
                 OverallProgressChanged(this, 100 * i / count);
             }
