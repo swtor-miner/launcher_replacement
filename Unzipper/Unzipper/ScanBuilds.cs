@@ -699,19 +699,28 @@ namespace Unzipper
                     {
                         int val = 0;
                         int.TryParse(element.Attribute(mankey).Value, out val);
-                        for (int j = -1; j < val; j++)
+                        // Start at expected and go backwards down to 0 if not found (can't symlink existing links)
+                        for (int j = val; j > -1; j--)
+                        // for (int j = -1; j < val; j++)
                         {
                             source = String.Format("{0}\\base\\{1}\\{2}\\", baseDir, mankey, j);
                             SymLink_Dir(target, source);
                         }
                     }
-                    else if (prevElement != null)
+                    else
                     {
-                        source = String.Format("{0}\\base\\{1}\\{2}\\", baseDir, mankey, prevElement.Attribute(mankey).Value);
+                        // Try to symlink the correct patch, if exists
+                        source = String.Format("{0}\\base\\{1}\\{2}\\", baseDir, mankey, element.Attribute(mankey).Value);
                         SymLink_Dir(target, source);
+                        // Try to symlink the previous patch (will only work if correct one didn't symlink)
+                        if (prevElement != null)
+                        {
+                            source = String.Format("{0}\\base\\{1}\\{2}\\", baseDir, mankey, prevElement.Attribute(mankey).Value);
+                            SymLink_Dir(target, source);
+                        }
                     }
-                    source = String.Format("{0}\\base\\{1}\\{2}\\", baseDir, mankey, element.Attribute(mankey).Value);
-                    SymLink_Dir(target, source);
+                    // source = String.Format("{0}\\base\\{1}\\{2}\\", baseDir, mankey, element.Attribute(mankey).Value);
+                    // SymLink_Dir(target, source);
                 }
                 prevElement = element;
                 i++;
@@ -741,37 +750,41 @@ namespace Unzipper
             }
         }
 
-        private async void Generate_Output()
+        private void Generate_Output()
         {
             var patchEles = patches.Element("patches").Elements();
             foreach (var element in patchEles)
             {
                 string target = String.Format("{0}\\patches\\{1}\\", outputDir, element.Attribute("version"));
                 AddItem(target);
+                string patch = element.Attribute("version").Value;
                 foreach (var mankey in manifests)
                 {
-                    string patch = element.Attribute("version").Value;
                     if (element.Attribute(manifests[0]) == null)
                     {
                         AddItem(String.Format("No Asset Changes {0}", patch));
                         continue;
                     }
-                    AddItem(String.Format("Outputting {0}", patch));
-                    using (Process deltaProcess = new Process())
-                    {
-                        //Maybe this shouldn't be hard coded? Could do this in memory instead to.
-                        deltaProcess.StartInfo.FileName = "ConsoleTools.exe";
+                }
+                AddItem(String.Format("Outputting {0}", patch));
+                using (Process deltaProcess = new Process())
+                {
+                    //Maybe this shouldn't be hard coded? Could do this in memory instead to.
+                    // deltaProcess.StartInfo.FileName = "ConsoleTools.exe";
+                    deltaProcess.StartInfo.FileName = "E:\\Game Rush\\Sources\\TORCommunity\\GitHub\\PugTools\\ConsoleTools\\Bin\\ConsoleTools.exe";
 
-                        deltaProcess.StartInfo.CreateNoWindow = true;
-                        deltaProcess.StartInfo.UseShellExecute = false;
-                        deltaProcess.StartInfo.RedirectStandardOutput = true;
-                        deltaProcess.StartInfo.RedirectStandardError = true;
-                        deltaProcess.StartInfo.Arguments = String.Format("{0} {1} {2}", patch, baseDir, outputDir);
-                        deltaProcess.Start();
-                        string output = deltaProcess.StandardOutput.ReadToEnd();
-                        Console.WriteLine(output);
-                        deltaProcess.WaitForExit();
-                    }
+                    deltaProcess.StartInfo.CreateNoWindow = true;
+                    deltaProcess.StartInfo.UseShellExecute = false;
+                    deltaProcess.StartInfo.RedirectStandardOutput = true;
+                    deltaProcess.StartInfo.RedirectStandardError = false;
+                    // deltaProcess.StartInfo.Arguments = String.Format("{0} {1} {2}", patch, baseDir, outputDir);
+                    var args = String.Format("{0} {1} {2} {3}", patch, baseDir + "\\patches\\", outputDir + "\\processed\\", "false");
+                    // var args = new string[] { patch, baseDir + "\\patches\\", outputDir + "\\processed\\", "false" };
+                    deltaProcess.StartInfo.Arguments = args;
+                    deltaProcess.Start();
+                    string output = deltaProcess.StandardOutput.ReadToEnd();
+                    Console.WriteLine(output);
+                    deltaProcess.WaitForExit();
                 }
             }
         }
