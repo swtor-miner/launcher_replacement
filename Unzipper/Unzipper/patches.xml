@@ -221,11 +221,11 @@
   <patch version="5.3.0" date="07/12/2017" assets_swtor_main="264" retailclient_swtor="222" assets_swtor_en_us="269" assets_swtor_de_de="267" assets_swtor_fr_fr="269" />
   <patch version="5.3.0a" date="07/13/2017" assets_swtor_main="265" retailclient_swtor="223" assets_swtor_en_us="270" assets_swtor_de_de="268" assets_swtor_fr_fr="270" />
   <patch version="5.4.0" date="08/22/2017" assets_swtor_main="266" retailclient_swtor="224" assets_swtor_en_us="271" assets_swtor_de_de="269" assets_swtor_fr_fr="271" />
-  <patch version="5.4.0a" date="08/31/2017" assets_swtor_main="269" retailclient_swtor="224" assets_swtor_en_us="274" assets_swtor_de_de="272" assets_swtor_fr_fr="274" />
-  <patch version="5.5.0" date="10/10/2017" assets_swtor_main="270" retailclient_swtor="228" assets_swtor_en_us="275" assets_swtor_de_de="273" assets_swtor_fr_fr="275" />
-  <patch version="5.5.0a" date="10/31/2017" assets_swtor_main="271" retailclient_swtor="229" assets_swtor_en_us="276" assets_swtor_de_de="274" assets_swtor_fr_fr="276" />
+  <patch version="5.4.0a" date="08/31/2017" assets_swtor_main="269" retailclient_swtor="226" assets_swtor_en_us="274" assets_swtor_de_de="272" assets_swtor_fr_fr="274" />
+  <patch version="5.5.0" date="10/10/2017" assets_swtor_main="271" retailclient_swtor="228" assets_swtor_en_us="276" assets_swtor_de_de="274" assets_swtor_fr_fr="276" />
+  <patch version="5.5.0a" date="10/31/2017" assets_swtor_main="272" retailclient_swtor="229" assets_swtor_en_us="277" assets_swtor_de_de="275" assets_swtor_fr_fr="277" />
   <patch version="5.5.1" date="11/08/2017" assets_swtor_main="272" retailclient_swtor="229" assets_swtor_en_us="277" assets_swtor_de_de="275" assets_swtor_fr_fr="277" />
-  <patch version="5.5.1a" date="11/15/2017" assets_swtor_main="274" retailclient_swtor="230" assets_swtor_en_us="279" assets_swtor_de_de="276" assets_swtor_fr_fr="279" />
+  <patch version="5.5.1a" date="11/15/2017" assets_swtor_main="274" retailclient_swtor="230" assets_swtor_en_us="279" assets_swtor_de_de="277" assets_swtor_fr_fr="279" />
   <patch version="5.6.0" date="11/28/2017" assets_swtor_main="275" retailclient_swtor="231" assets_swtor_en_us="280" assets_swtor_de_de="278" assets_swtor_fr_fr="280" />
   <patch version="5.6.1" date="12/12/2017" assets_swtor_main="276" retailclient_swtor="232" assets_swtor_en_us="281" assets_swtor_de_de="279" assets_swtor_fr_fr="281" />
   <patch version="5.7.0" date="01/30/2018" assets_swtor_main="279" retailclient_swtor="234" assets_swtor_en_us="284" assets_swtor_de_de="282" assets_swtor_fr_fr="284" />
@@ -252,13 +252,13 @@
   <patch version="5.10.3" date="06/04/2019" assets_swtor_main="306" retailclient_swtor="256" assets_swtor_en_us="311" assets_swtor_de_de="309" assets_swtor_fr_fr="311" />
   <patch version="5.10.3a" date="06/11/2019" assets_swtor_main="307" retailclient_swtor="257" assets_swtor_en_us="312" assets_swtor_de_de="310" assets_swtor_fr_fr="312" />
   <patch version="5.10.4" date="07/16/2019" assets_swtor_main="308" retailclient_swtor="258" assets_swtor_en_us="313" assets_swtor_de_de="311" assets_swtor_fr_fr="313" />
-  <patch version="6.0.0" date="10/22/2019" assets_swtor_main="310" retailclient_swtor="258" assets_swtor_en_us="315" assets_swtor_de_de="313" assets_swtor_fr_fr="315" />
+  <patch version="6.0.0" date="10/22/2019" assets_swtor_main="310" retailclient_swtor="260" assets_swtor_en_us="315" assets_swtor_de_de="313" assets_swtor_fr_fr="315" />
   <patch version="6.0.0a" date="10/29/2019" assets_swtor_main="311" retailclient_swtor="261" assets_swtor_en_us="316" assets_swtor_de_de="314" assets_swtor_fr_fr="316" />
   <patch version="6.0.1" date="11/14/2019" assets_swtor_main="312" retailclient_swtor="262" assets_swtor_en_us="317" assets_swtor_de_de="315" assets_swtor_fr_fr="317" />
   <patch version="6.0.1a" date="11/24/2019" assets_swtor_main="313" retailclient_swtor="263" assets_swtor_en_us="318" assets_swtor_de_de="316" assets_swtor_fr_fr="318" />
   <patch version="6.0.2" date="12/12/2019" assets_swtor_main="314" retailclient_swtor="264" assets_swtor_en_us="319" assets_swtor_de_de="317" assets_swtor_fr_fr="319" />
   <patch version="6.0.2a" date="12/17/2019" assets_swtor_main="316" retailclient_swtor="265" assets_swtor_en_us="321" assets_swtor_de_de="319" assets_swtor_fr_fr="321" />
-  <patch version="6.1.0" date="02/13/2020" assets_swtor_main="318" retailclient_swtor="266" assets_swtor_en_us="322" assets_swtor_de_de="321" assets_swtor_fr_fr="322" />
+  <patch version="6.1.0" date="02/13/2020" assets_swtor_main="318" retailclient_swtor="266" assets_swtor_en_us="323" assets_swtor_de_de="321" assets_swtor_fr_fr="323" />
   <patch version="6.1.0a" date="02/20/2020" assets_swtor_main="319" retailclient_swtor="267" assets_swtor_en_us="324" assets_swtor_de_de="322" assets_swtor_fr_fr="324" />
   <patch version="6.1.0b" date="03/13/2020" assets_swtor_main="321" retailclient_swtor="268" assets_swtor_en_us="326" assets_swtor_de_de="324" assets_swtor_fr_fr="326" />
   <patch version="6.1.0c" date="03/24/2020" assets_swtor_main="322" retailclient_swtor="269" assets_swtor_en_us="327" assets_swtor_de_de="325" assets_swtor_fr_fr="327" />
@@ -271,7 +271,8 @@
   <patch version="6.1.2c" date="07/21/2020" assets_swtor_main="330" retailclient_swtor="276" assets_swtor_en_us="335" assets_swtor_de_de="333" assets_swtor_fr_fr="335" />
   <patch version="6.1.2d" date="07/28/2020" assets_swtor_main="331" retailclient_swtor="277" assets_swtor_en_us="336" assets_swtor_de_de="334" assets_swtor_fr_fr="336" />
   <patch version="6.1.3" date="09/09/2020" assets_swtor_main="332" retailclient_swtor="278" assets_swtor_en_us="337" assets_swtor_de_de="335" assets_swtor_fr_fr="337" />
-  <patch version="6.1.4" date="10/20/2020" assets_swtor_main="333" retailclient_swtor="279" assets_swtor_en_us="338" assets_swtor_de_de="336" assets_swtor_fr_fr="338" />
+  <patch version="6.1.4" date="10/20/2020" assets_swtor_main="334" retailclient_swtor="279" assets_swtor_en_us="339" assets_swtor_de_de="337" assets_swtor_fr_fr="339" />
   <patch version="6.1.4a" date="10/21/2020" assets_swtor_main="334" retailclient_swtor="280" assets_swtor_en_us="339" assets_swtor_de_de="337" assets_swtor_fr_fr="339" />
   <patch version="6.1.4b" date="10/27/2020" assets_swtor_main="335" retailclient_swtor="281" assets_swtor_en_us="340" assets_swtor_de_de="338" assets_swtor_fr_fr="340" />
+  <patch version="6.1.4c" date="11/03/2020" assets_swtor_main="336" retailclient_swtor="282" assets_swtor_en_us="341" assets_swtor_de_de="339" assets_swtor_fr_fr="341" />
 </patches>

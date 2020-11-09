@@ -699,19 +699,28 @@ namespace Unzipper
                     {
                         int val = 0;
                         int.TryParse(element.Attribute(mankey).Value, out val);
-                        for (int j = -1; j < val; j++)
+                        // Start at expected and go backwards down to 0 if not found (can't symlink existing links)
+                        for (int j = val; j > -1; j--)
+                        // for (int j = -1; j < val; j++)
                         {
                             source = String.Format("{0}\\base\\{1}\\{2}\\", baseDir, mankey, j);
                             SymLink_Dir(target, source);
                         }
                     }
-                    else if (prevElement != null)
+                    else
                     {
-                        source = String.Format("{0}\\base\\{1}\\{2}\\", baseDir, mankey, prevElement.Attribute(mankey).Value);
+                        // Try to symlink the correct patch, if exists
+                        source = String.Format("{0}\\base\\{1}\\{2}\\", baseDir, mankey, element.Attribute(mankey).Value);
                         SymLink_Dir(target, source);
+                        // Try to symlink the previous patch (will only work if correct one didn't symlink)
+                        if (prevElement != null)
+                        {
+                            source = String.Format("{0}\\base\\{1}\\{2}\\", baseDir, mankey, prevElement.Attribute(mankey).Value);
+                            SymLink_Dir(target, source);
+                        }
                     }
-                    source = String.Format("{0}\\base\\{1}\\{2}\\", baseDir, mankey, element.Attribute(mankey).Value);
-                    SymLink_Dir(target, source);
+                    // source = String.Format("{0}\\base\\{1}\\{2}\\", baseDir, mankey, element.Attribute(mankey).Value);
+                    // SymLink_Dir(target, source);
                 }
                 prevElement = element;
                 i++;
