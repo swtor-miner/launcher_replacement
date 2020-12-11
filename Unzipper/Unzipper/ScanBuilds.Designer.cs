@@ -65,7 +65,7 @@
             this.scan_button.TabIndex = 1;
             this.scan_button.Text = "Scan";
             this.scan_button.UseVisualStyleBackColor = true;
-            this.scan_button.Click += new System.EventHandler(this.scan_button_Click);
+            this.scan_button.Click += new System.EventHandler(this.Scan_button_Click);
             // 
             // WalkWorker
             // 
@@ -80,7 +80,7 @@
             this.download_button.TabIndex = 2;
             this.download_button.Text = "Download";
             this.download_button.UseVisualStyleBackColor = true;
-            this.download_button.Click += new System.EventHandler(this.download_button_Click);
+            this.download_button.Click += new System.EventHandler(this.Download_button_Click);
             // 
             // Download_progressBar
             // 
@@ -108,7 +108,7 @@
             this.extract_button.TabIndex = 5;
             this.extract_button.Text = "Extract";
             this.extract_button.UseVisualStyleBackColor = true;
-            this.extract_button.Click += new System.EventHandler(this.extract_button_Click);
+            this.extract_button.Click += new System.EventHandler(this.Extract_button_Click);
             // 
             // db_button
             // 

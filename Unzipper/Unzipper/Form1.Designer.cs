@@ -68,7 +68,7 @@
             this.button1.TabIndex = 1;
             this.button1.Text = "Extract";
             this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.button1.Click += new System.EventHandler(this.Button1_Click);
             // 
             // listBox1
             // 
@@ -86,7 +86,7 @@
             this.patchBrowse.TabIndex = 3;
             this.patchBrowse.Text = "Browse";
             this.patchBrowse.UseVisualStyleBackColor = true;
-            this.patchBrowse.Click += new System.EventHandler(this.patchBrowse_Click);
+            this.patchBrowse.Click += new System.EventHandler(this.PatchBrowse_Click);
             // 
             // tempPathBox
             // 
@@ -94,7 +94,7 @@
             this.tempPathBox.Name = "tempPathBox";
             this.tempPathBox.Size = new System.Drawing.Size(351, 20);
             this.tempPathBox.TabIndex = 4;
-            this.tempPathBox.TextChanged += new System.EventHandler(this.tempPathBox_TextChanged);
+            this.tempPathBox.TextChanged += new System.EventHandler(this.TempPathBox_TextChanged);
             // 
             // patchOutBox
             // 
@@ -102,7 +102,7 @@
             this.patchOutBox.Name = "patchOutBox";
             this.patchOutBox.Size = new System.Drawing.Size(351, 20);
             this.patchOutBox.TabIndex = 5;
-            this.patchOutBox.TextChanged += new System.EventHandler(this.patchOutBox_TextChanged);
+            this.patchOutBox.TextChanged += new System.EventHandler(this.PatchOutBox_TextChanged);
             // 
             // tempBrowse
             // 
@@ -112,7 +112,7 @@
             this.tempBrowse.TabIndex = 6;
             this.tempBrowse.Text = "Browse";
             this.tempBrowse.UseVisualStyleBackColor = true;
-            this.tempBrowse.Click += new System.EventHandler(this.tempBrowse_Click);
+            this.tempBrowse.Click += new System.EventHandler(this.TempBrowse_Click);
             // 
             // outBrowse
             // 
@@ -122,7 +122,7 @@
             this.outBrowse.TabIndex = 7;
             this.outBrowse.Text = "Browse";
             this.outBrowse.UseVisualStyleBackColor = true;
-            this.outBrowse.Click += new System.EventHandler(this.outBrowse_Click);
+            this.outBrowse.Click += new System.EventHandler(this.OutBrowse_Click);
             // 
             // extractAndPatchButton
             // 
@@ -188,7 +188,7 @@
             this.patchBaseBox.Name = "patchBaseBox";
             this.patchBaseBox.Size = new System.Drawing.Size(351, 20);
             this.patchBaseBox.TabIndex = 14;
-            this.patchBaseBox.TextChanged += new System.EventHandler(this.patchBaseBox_TextChanged);
+            this.patchBaseBox.TextChanged += new System.EventHandler(this.PatchBaseBox_TextChanged);
             // 
             // patchBaseBrowseBtn
             // 
@@ -198,7 +198,7 @@
             this.patchBaseBrowseBtn.TabIndex = 15;
             this.patchBaseBrowseBtn.Text = "Browse";
             this.patchBaseBrowseBtn.UseVisualStyleBackColor = true;
-            this.patchBaseBrowseBtn.Click += new System.EventHandler(this.patchBaseBrowseBtn_Click);
+            this.patchBaseBrowseBtn.Click += new System.EventHandler(this.PatchBaseBrowseBtn_Click);
             // 
             // label4
             // 
@@ -211,8 +211,8 @@
             // 
             // extractWorker1
             // 
-            this.extractWorker1.DoWork += new System.ComponentModel.DoWorkEventHandler(this.extractWorker1_DoWork);
-            this.extractWorker1.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.extractWorker1_RunWorkerCompleted);
+            this.extractWorker1.DoWork += new System.ComponentModel.DoWorkEventHandler(this.ExtractWorker1_DoWork);
+            this.extractWorker1.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.ExtractWorker1_RunWorkerCompleted);
             // 
             // useSymChk
             // 
@@ -233,7 +233,7 @@
             this.scan_button.TabIndex = 18;
             this.scan_button.Text = "Scan Builds";
             this.scan_button.UseVisualStyleBackColor = true;
-            this.scan_button.Click += new System.EventHandler(this.scan_button_Click);
+            this.scan_button.Click += new System.EventHandler(this.Scan_button_Click);
             // 
             // Form1
             // 

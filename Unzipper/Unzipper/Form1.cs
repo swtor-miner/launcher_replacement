@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -48,7 +48,7 @@ namespace Unzipper
 
         // moved to SolidStateZip Libary
 
-        private void patchBrowse_Click(object sender, EventArgs e)
+        private void PatchBrowse_Click(object sender, EventArgs e)
         {
             OpenFileDialog fbd = new OpenFileDialog();
             fbd.FileName = textBox1.Text;
@@ -56,7 +56,7 @@ namespace Unzipper
                 textBox1.Text = fbd.FileName;
         }
 
-        private void tempBrowse_Click(object sender, EventArgs e)
+        private void TempBrowse_Click(object sender, EventArgs e)
         {
             string tempPath = BrowseDirectory("Select folder to extract and download files to.");
             if(tempPath.Length > 0)
@@ -65,7 +65,7 @@ namespace Unzipper
             }
         }
 
-        private void outBrowse_Click(object sender, EventArgs e)
+        private void OutBrowse_Click(object sender, EventArgs e)
         {
             string outPath = BrowseDirectory("Select folder to write patch output to.");
             if (outPath.Length > 0)
@@ -74,7 +74,7 @@ namespace Unzipper
             }
         }
 
-        private void patchBaseBrowseBtn_Click(object sender, EventArgs e)
+        private void PatchBaseBrowseBtn_Click(object sender, EventArgs e)
         {
             string outPath = BrowseDirectory("Select folder to get files to use as the source for patching.");
             if (outPath.Length > 0)
@@ -97,28 +97,28 @@ namespace Unzipper
             }
         }
 
-        private void tempPathBox_TextChanged(object sender, EventArgs e)
+        private void TempPathBox_TextChanged(object sender, EventArgs e)
         {
             Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
             config.AppSettings.Settings["TempPath"].Value = tempPathBox.Text;
             config.Save();    
         }
 
-        private void patchOutBox_TextChanged(object sender, EventArgs e)
+        private void PatchOutBox_TextChanged(object sender, EventArgs e)
         {
             Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
             config.AppSettings.Settings["OutPath"].Value = patchOutBox.Text;
             config.Save();
         }
 
-        private void patchBaseBox_TextChanged(object sender, EventArgs e)
+        private void PatchBaseBox_TextChanged(object sender, EventArgs e)
         {
             Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
             config.AppSettings.Settings["BasePath"].Value = patchBaseBox.Text;
             config.Save();
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void Button1_Click(object sender, EventArgs e)
         {
             if(!tempPathBox.Text.EndsWith("\\"))
             {
@@ -235,7 +235,7 @@ namespace Unzipper
             }
         }
 
-        private void extractWorker1_DoWork(object sender, DoWorkEventArgs e)
+        private void ExtractWorker1_DoWork(object sender, DoWorkEventArgs e)
         {
             string fullFileName = textBox1.Text;
             bool doPatch = (bool)e.Argument;
@@ -262,7 +262,7 @@ namespace Unzipper
             }
         }
 
-        private void extractWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        private void ExtractWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             //Free up any memory when we are done.
             System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
@@ -286,7 +286,7 @@ namespace Unzipper
 
         }
 
-        private void scan_button_Click(object sender, EventArgs e)
+        private void Scan_button_Click(object sender, EventArgs e)
         {
             scan_button.Enabled = false;
             ScanBuilds testFile = new ScanBuilds(useSymChk.Checked, patchOutBox.Text, tempPathBox.Text, patchBaseBox.Text);

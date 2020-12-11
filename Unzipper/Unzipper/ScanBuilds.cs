@@ -70,6 +70,19 @@ namespace Unzipper
             tempDir = _tempDir;
             baseDir = _baseDir;
             ZipExtractor = new ZipExtractor(null, false, null, null, null);
+            // Fix Ending slashes for consistency
+            if (outputDir.EndsWith("\\"))
+            {
+                outputDir = outputDir.TrimEnd('\\');
+            }
+            if (tempDir.EndsWith("\\"))
+            {
+                tempDir = tempDir.TrimEnd('\\');
+            }
+            if (baseDir.EndsWith("\\"))
+            {
+                baseDir = baseDir.TrimEnd('\\');
+            }
         }
 
         private void ClearItemList()
@@ -95,15 +108,15 @@ namespace Unzipper
             }
         }
 
-        private void scan_button_Click(object sender, EventArgs e)
+        private void Scan_button_Click(object sender, EventArgs e)
         {
             WalkWorker.RunWorkerAsync(WalkType.Scan);
         }
-        private void download_button_Click(object sender, EventArgs e)
+        private void Download_button_Click(object sender, EventArgs e)
         {
             WalkWorker.RunWorkerAsync(WalkType.Download);
         }
-        private void extract_button_Click(object sender, EventArgs e)
+        private void Extract_button_Click(object sender, EventArgs e)
         {
             WalkWorker.RunWorkerAsync(WalkType.Extract);
         }
@@ -186,7 +199,7 @@ namespace Unzipper
             Extract = 2,
             Verify = 3
         }
-        private async void Walk_Builds(WalkType wtype)
+        private void Walk_Builds(WalkType wtype)
         {
             Load_Patches();
             if (outputDir.Contains("\\"))
@@ -290,7 +303,6 @@ namespace Unzipper
 
         private bool WalkBuild(WalkType wtype, string metaFileUrl, string mankey, long from, long to, System.IO.StreamWriter file2)
         {
-
             Stream rawMetaFile = null;
             int i = 0;
             var cache_file = String.Format(@"cache/{0}_{1}to{2}.metafile.solid", mankey, from, to);
@@ -324,6 +336,7 @@ namespace Unzipper
             long rawSeconds = Int64.Parse(decoded["creation date"].ToString());
             DateTime time = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
             time = time.AddSeconds(rawSeconds).ToLocalTime();
+
             switch (wtype)
             {
                 case WalkType.Scan:
@@ -377,7 +390,7 @@ namespace Unzipper
                     break;
                 case WalkType.Verify:
                     string tit = decoded["title"].ToString();
-                    string verifyDirectory = String.Format("{0}files\\{1}\\", outputDir, tit).Replace(": ", "_");
+                    string verifyDirectory = String.Format("{0}\\files\\{1}\\", outputDir, tit).Replace(": ", "_");
                     var torrent = BitTorrent.Torrent.LoadFromFile(cache_file, verifyDirectory);
                     //for(int p =0; p < torrent.PieceCount; p++)
                     //{
@@ -393,7 +406,7 @@ namespace Unzipper
                     BencodeNET.Objects.BList files = ((BencodeNET.Objects.BList)((BencodeNET.Objects.BDictionary)decoded["info"])["files"]);
                     string title = decoded["title"].ToString();
                     string reliable = decoded["reliable"].ToString();
-                    string outputDirectory = String.Format("{0}files\\{1}\\", outputDir, title).Replace(": ", "_");
+                    string outputDirectory = String.Format("{0}\\files\\{1}\\", outputDir, title).Replace(": ", "_");
 
                     foreach (var bFile in files)
                     {
@@ -429,13 +442,13 @@ namespace Unzipper
                     }
                     break;
                 case WalkType.Extract:
-                    string fullFileName = String.Format("{0}files\\{1}_{2}to{3}\\{1}_{2}to{3}.zip", tempDir, mankey, from, to);
+                    string fullFileName = String.Format("{0}\\files\\{1}_{2}to{3}\\{1}_{2}to{3}.zip", tempDir, mankey, from, to);
                     using (FileStream fs = File.Open(fullFileName, FileMode.Open))
                     {
                         BinaryReader br = new BinaryReader(fs);
                         ClearItemList();
                         AddItem(String.Format("Patching: {0}_{1}to{2}", mankey, from, to));
-                        string tempPath = String.Format("{0}diffs\\{1}_{2}to{3}\\", tempDir, mankey, from, to);
+                        string tempPath = String.Format("{0}\\diffs\\{1}_{2}to{3}\\", tempDir, mankey, from, to);
                         Directory.CreateDirectory(tempPath);
 
                         string basePath = String.Format("{0}\\base\\{1}\\{2}\\", outputDir, mankey, from);
@@ -572,8 +585,8 @@ namespace Unzipper
         {
             using (WebClient downloader = new WebClient())
             {
-                downloader.DownloadProgressChanged += client_DownloadProgressChanged;
-                downloader.DownloadFileCompleted += client_DownloadComplete;
+                downloader.DownloadProgressChanged += Client_DownloadProgressChanged;
+                downloader.DownloadFileCompleted += Client_DownloadComplete;
 
                 var syncObject = new Object();
                 lock (syncObject)
@@ -614,7 +627,7 @@ namespace Unzipper
             }
         }
 
-        public void client_DownloadComplete(object sender, AsyncCompletedEventArgs e)
+        public void Client_DownloadComplete(object sender, AsyncCompletedEventArgs e)
         {
             lock (e.UserState)
             {
@@ -622,7 +635,7 @@ namespace Unzipper
                 System.Threading.Monitor.Pulse(e.UserState);
             }
         }
-        private void client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+        private void Client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
         {
             this.BeginInvoke((MethodInvoker)delegate
             {
@@ -674,7 +687,7 @@ namespace Unzipper
                 patches.Save(file2, SaveOptions.None);
             }
         }
-        private async void SymLink_Patches()
+        private void SymLink_Patches()
         {
             Load_Patches();
             var patchEles = patches.Element("patches").Elements();
@@ -686,15 +699,15 @@ namespace Unzipper
             foreach (var element in patchEles)
             {
                 string target = String.Format("{0}\\patches\\{1}\\", outputDir, element.Attribute("version").Value);
-                //AddItem(target);
+                // AddItem(target);
                 foreach (var mankey in manifests)
                 {
                     if (element.Attribute(mankey) == null)
                         continue;
-                    //fix for missing files
+                    // Fix for missing files
 
                     string source = "";
-                    //workaround for missing files
+                    // Workaround for missing files
                     if (i == 0)
                     {
                         int val = 0;
@@ -753,6 +766,8 @@ namespace Unzipper
         private void Generate_Output()
         {
             var patchEles = patches.Element("patches").Elements();
+            var strings = new List<string> { "6.2.0" };
+            
             foreach (var element in patchEles)
             {
                 string target = String.Format("{0}\\patches\\{1}\\", outputDir, element.Attribute("version"));
@@ -767,24 +782,28 @@ namespace Unzipper
                     }
                 }
                 AddItem(String.Format("Outputting {0}", patch));
-                using (Process deltaProcess = new Process())
-                {
-                    //Maybe this shouldn't be hard coded? Could do this in memory instead to.
-                    // deltaProcess.StartInfo.FileName = "ConsoleTools.exe";
-                    deltaProcess.StartInfo.FileName = "E:\\Game Rush\\Sources\\TORCommunity\\GitHub\\PugTools\\ConsoleTools\\Bin\\ConsoleTools.exe";
 
-                    deltaProcess.StartInfo.CreateNoWindow = true;
-                    deltaProcess.StartInfo.UseShellExecute = false;
-                    deltaProcess.StartInfo.RedirectStandardOutput = true;
-                    deltaProcess.StartInfo.RedirectStandardError = false;
-                    // deltaProcess.StartInfo.Arguments = String.Format("{0} {1} {2}", patch, baseDir, outputDir);
-                    var args = String.Format("{0} {1} {2} {3}", patch, baseDir + "\\patches\\", outputDir + "\\processed\\", "false");
-                    // var args = new string[] { patch, baseDir + "\\patches\\", outputDir + "\\processed\\", "false" };
-                    deltaProcess.StartInfo.Arguments = args;
-                    deltaProcess.Start();
-                    string output = deltaProcess.StandardOutput.ReadToEnd();
-                    Console.WriteLine(output);
-                    deltaProcess.WaitForExit();
+                bool contains = strings.Contains(patch, StringComparer.OrdinalIgnoreCase);
+                if (contains) {
+                    using (Process deltaProcess = new Process())
+                    {
+                        //Maybe this shouldn't be hard coded? Could do this in memory instead to.
+                        // deltaProcess.StartInfo.FileName = "ConsoleTools.exe";
+                        deltaProcess.StartInfo.FileName = "E:\\Game Rush\\Sources\\TORCommunity\\GitHub\\PugTools\\ConsoleTools\\Bin\\ConsoleTools.exe";
+
+                        deltaProcess.StartInfo.CreateNoWindow = true;
+                        deltaProcess.StartInfo.UseShellExecute = false;
+                        deltaProcess.StartInfo.RedirectStandardOutput = true;
+                        deltaProcess.StartInfo.RedirectStandardError = false;
+                        // deltaProcess.StartInfo.Arguments = String.Format("{0} {1} {2}", patch, baseDir, outputDir);
+                        var args = String.Format("{0} {1} {2} {3}", patch, baseDir + "\\patches\\", outputDir + "\\processed\\", "false");
+                        // var args = new string[] { patch, baseDir + "\\patches\\", outputDir + "\\processed\\", "false" };
+                        deltaProcess.StartInfo.Arguments = args;
+                        deltaProcess.Start();
+                        string output = deltaProcess.StandardOutput.ReadToEnd();
+                        Console.WriteLine(output);
+                        deltaProcess.WaitForExit();
+                    }
                 }
             }
         }

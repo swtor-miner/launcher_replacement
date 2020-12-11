@@ -17,17 +17,17 @@ namespace Unzipper
             InitializeComponent();
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void Button1_Click(object sender, EventArgs e)
         {
             this.DialogResult = DialogResult.OK;
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void Button2_Click(object sender, EventArgs e)
         {
             this.DialogResult = DialogResult.Cancel;
         }
 
-        private void input_KeyDown(object sender, KeyPressEventArgs e)
+        private void Input_KeyDown(object sender, KeyPressEventArgs e)
         {
             if (e.KeyChar == (char)13)
             {
