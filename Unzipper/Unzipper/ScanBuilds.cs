@@ -766,7 +766,7 @@ namespace Unzipper
         private void Generate_Output()
         {
             var patchEles = patches.Element("patches").Elements();
-            var strings = new List<string> { "6.2.0" };
+            var strings = new List<string> { "6.2.0b" };
             
             foreach (var element in patchEles)
             {
